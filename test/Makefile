@@ -6,15 +6,15 @@ OBJECTS = $(SOURCES:.c=)
 
 
 
-all:	$(OBJECTS)
+all:	thread.o $(OBJECTS)
 
 thread.o:	thread.h thread.c
 	$(CC) $(LFLAGS) -o thread.o -c thread.c
 
-%:	%.c thread.o
+%:	%.c
 	$(CC) $(LFLAGS) -o $@ $^ thread.o
 
-check:	$(OBJECTS)
+check:	thread.o $(OBJECTS)
 
 	@for i in $(OBJECTS) ; do \
 	echo " ";\
