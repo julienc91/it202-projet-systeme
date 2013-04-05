@@ -1,9 +1,12 @@
 CC=gcc
 LFLAGS=-Wall -Wextra
 
-all:	contextes
+all:	contextes thread
 
 contextes:	contextes.c
+	$(CC) $(LFLAGS) -o $@ $^
+
+thread:	thread.c
 	$(CC) $(LFLAGS) -o $@ $^
 
 clean:
