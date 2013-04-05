@@ -7,7 +7,7 @@ contextes:	contextes.c
 	$(CC) $(LFLAGS) -o $@ $^
 
 thread:	thread.c
-	$(CC) $(LFLAGS) -c $@ $^
+	$(CC) $(LFLAGS) -c $^
 
 clean:
 	@rm contextes
