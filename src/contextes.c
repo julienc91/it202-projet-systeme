@@ -11,11 +11,11 @@ int main() {
   ucontext_t uc, previous;
 
   getcontext(&uc); /* initialisation de uc avec valeurs coherentes
-		    * (pour éviter de tout remplit a la main ci-dessous) */
+	//	    * (pour éviter de tout remplit a la main ci-dessous) */
 
   uc.uc_stack.ss_size = 64*1024;
   uc.uc_stack.ss_sp = malloc(uc.uc_stack.ss_size);
-  uc.uc_link = &previous;
+  uc.uc_link = NULL;
   makecontext(&uc, (void (*)(void)) func, 1, 34);
 
   printf("je suis dans le main\n");
