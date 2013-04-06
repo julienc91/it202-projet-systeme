@@ -45,12 +45,18 @@ extern thread_t thread_self(void)
 extern int thread_create(thread_t *newthread, void *(*func)(void *), void *funcarg)
 {
 	thread_init_function();
+	//Création d'un nouveau thread
+	
+	//Exécution de func avec funcarg en paramètre
+	func(funcarg);
+	
 	return 0;
 }
 
 extern int thread_yield(void)
 {
 	thread_init_function();
+	
 	return 0;
 }
 
@@ -63,6 +69,13 @@ extern int thread_join(thread_t thread, void **retval)
 extern void thread_exit(void *retval)
 {
 	thread_init_function();
+	//Affectation de la valeur de retour du thread courant à retval
+	  // => Il faudrait peut-être un champ (void*) retval dans thread_t pour la récupérer facilement ?
+
+	//Terminaison du thread courant
+	TAILQ_FIRST(&threadList.list)->state = DEAD;
+	
+	//Cette fonction ne doit pas terminer
 	label:
 		goto label;
 }
