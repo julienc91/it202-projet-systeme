@@ -11,11 +11,19 @@ void thread_init_function(void)
 {
 	if(!threadList.isInitialized)
 	{
+		threadList.isInitialized = TRUE;
 		TAILQ_INIT(&threadList.list);
-		threadList.isInitialized = 1;
-		// il faut récupérer le contexte courant et le mettre dans threadList.mainThread, ainsi que l'ajouter
 
-		//getcontext, craeatecontext, etc...
+		// il faut récupérer le contexte courant et le mettre dans threadList.mainThread, ainsi que l'ajouter
+		thread_t *thread = malloc(sizeof(thread_t));
+		thread.state = READY;
+		thread.already_done = FALSE;
+
+		getcontext(&(thread->context));
+
+		threadList.mainThread = thread;
+		TAILQ_INSERT_HEAD(&threadList.list, thread, entries);
+
 	}
 }
 
@@ -26,7 +34,6 @@ extern thread_t thread_self(void)
 	//penser à faire une méthode de recopie
 	if(!TAILQ_EMPTY(&threadList.list))
 	{
-
 		ret.state = TAILQ_FIRST(&threadList.list)->state;
 		ret.context = TAILQ_FIRST(&threadList.list)->context;
 
@@ -46,17 +53,17 @@ extern int thread_create(thread_t *newthread, void *(*func)(void *), void *funca
 {
 	thread_init_function();
 	//Création d'un nouveau thread
-	
+
 	//Exécution de func avec funcarg en paramètre
 	func(funcarg);
-	
+
 	return 0;
 }
 
 extern int thread_yield(void)
 {
 	thread_init_function();
-	
+
 	return 0;
 }
 
@@ -74,7 +81,7 @@ extern void thread_exit(void *retval)
 
 	//Terminaison du thread courant
 	TAILQ_FIRST(&threadList.list)->state = DEAD;
-	
+
 	//Cette fonction ne doit pas terminer
 	label:
 		goto label;

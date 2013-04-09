@@ -1,9 +1,10 @@
 #ifndef __THREAD_H__
 #define __THREAD_H__
 
+#define TRUE 1
+#define FALSE 0
 
-
-typedef enum { READY, SLEEPING, DEAD} STATE;
+typedef enum {READY, SLEEPING, DEAD} STATE;
 
 typedef struct thread_t_
 {
@@ -22,7 +23,7 @@ typedef struct thread_t_
 typedef struct Threads
 {
   int isInitialized;
-  thread_t mainThread;
+  thread_t *mainThread;
   TAILQ_HEAD(, thread_t_) list;
 } Threads;
 
