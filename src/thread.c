@@ -1,11 +1,29 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <malloc.h>
 #include <ucontext.h> /* ne compile pas avec -std=c89 ou -std=c99 */
 #include "queue.h"
 #include "thread.h"
 
 static Threads threadList;
+
+thread_t thread_copy(thread_t th){
+
+	thread_t copie;
+
+	copie.state = th.state;
+	copie.context = th.context;
+	copie.already_done = th.already_done;
+	copie.retval_size = th.retval_size ;
+
+
+	copie.retval = malloc(th.retval_size);
+	memcpy(copie.retval, th.retval, th.retval_size);
+
+	copie.entries = th.entries ;
+	return copie;
+}
 
 void thread_init_function(void)
 {
