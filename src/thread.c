@@ -79,8 +79,16 @@ extern int thread_yield(void)
 	  if(thread->state == READY && thread != tmp)
 	    break;
 	}
-	if(thread->state != READY)
-	  return 0;
+	if(thread->state != READY) {
+	  if(threadList.currentThread->state == READY) {
+	    return 0;
+	  }
+	  else {
+	    thread = threadList.mainThread;
+	    fprintf(stderr, "Retour au main\n");
+	  }
+	}
+	 
 	threadList.currentThread = thread;
 	
 	//Changement de contexte
