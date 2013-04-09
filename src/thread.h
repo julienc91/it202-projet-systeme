@@ -1,6 +1,9 @@
 #ifndef __THREAD_H__
 #define __THREAD_H__
 
+#include <ucontext.h>
+#include "queue.h"
+
 #define TRUE 1
 #define FALSE 0
 #define STACK_SIZE 64*1024
@@ -17,8 +20,6 @@ typedef struct thread_t_
   TAILQ_ENTRY(thread_t_) entries;
   /* return value */
   void *retval;
-  /* size of retval */
-  size_t retval_size;
   /* boolean */
   int already_done;
 } thread_t;
