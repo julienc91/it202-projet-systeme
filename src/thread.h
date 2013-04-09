@@ -29,7 +29,7 @@ typedef struct Threads
   TAILQ_HEAD(, thread_t_) list;
 } Threads;
 
-thread_t thread_copy(thread_t th);
+thread_t thread_copy(thread_t *th);
 
 
 //*********************************//

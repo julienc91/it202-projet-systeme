@@ -8,20 +8,20 @@
 
 static Threads threadList;
 
-thread_t thread_copy(thread_t th){
+thread_t thread_copy(thread_t *th){
 
 	thread_t copie;
 
-	copie.state = th.state;
-	copie.context = th.context;
-	copie.already_done = th.already_done;
-	copie.retval_size = th.retval_size ;
+	copie.state = th->state;
+	copie.context = th->context;
+	copie.already_done = th->already_done;
+	copie.retval_size = th->retval_size ;
 
 
-	copie.retval = malloc(th.retval_size);
-	memcpy(copie.retval, th.retval, th.retval_size);
+	copie.retval = malloc(th->retval_size);
+	memcpy(copie.retval, th->retval, th->retval_size);
 
-	copie.entries = th.entries ;
+	copie.entries = th->entries ;
 	return copie;
 }
 
@@ -34,10 +34,10 @@ void thread_init_function(void)
 
 		// il faut récupérer le contexte courant et le mettre dans threadList.mainThread, ainsi que l'ajouter
 		thread_t *thread = malloc(sizeof(thread_t));
-		thread.state = READY;
-		thread.already_done = FALSE;
-		thread.retval = NULL;
-		thread.retval_size = 0;
+		thread->state = READY;
+		thread->already_done = FALSE;
+		thread->retval = NULL;
+		thread->retval_size = 0;
 
 		getcontext(&(thread->context));
 
