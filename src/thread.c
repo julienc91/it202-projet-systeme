@@ -70,7 +70,12 @@ extern int thread_yield(void)
 {
 	thread_init_function();
 
+	//Màj du currentThread dans la threadList
+	thread_t tmp = threadList.currentThread;
+	threadList.currentThread = TAILQ_FIRST(&(threadList.list));
 	
+	//Changement de contexte
+	swapcontext(&(tmp->context), &(threadList.currentThread->context));
 
 	return 0;
 }
@@ -78,6 +83,7 @@ extern int thread_yield(void)
 extern int thread_join(thread_t thread, void **retval)
 {
 	thread_init_function();
+	//thread_yield();
 	return 0;
 }
 
