@@ -18,11 +18,13 @@ void thread_init_function(void)
 		thread_t *thread = malloc(sizeof(thread_t));
 		thread->state = READY;
 		thread->already_done = FALSE;
+		thread->retval = NULL;
+		thread->retval_size = 0;
 
 		getcontext(&(thread->context));
 
 		threadList.mainThread = thread;
-		TAILQ_INSERT_HEAD(&threadList.list, thread, entries);
+		TAILQ_INSERT_HEAD(&(threadList.list), thread, entries);
 
 	}
 }
@@ -30,23 +32,9 @@ void thread_init_function(void)
 
 extern thread_t thread_self(void)
 {
-	thread_t ret;
-	//penser à faire une méthode de recopie
-	if(!TAILQ_EMPTY(&threadList.list))
-	{
-		ret.state = TAILQ_FIRST(&threadList.list)->state;
-		ret.context = TAILQ_FIRST(&threadList.list)->context;
-
-		//TAILQ_REMOVE(&thread_list, ret, entries);
-	}
-
 	thread_init_function();
-	return ret;
-	/*if (TAILQ_NEXT(TAILQ_FIRST(&thread_list),entries) == NULL)
-	{
-		return (thread_t) *TAILQ_LAST(&thread_list, thread_t_);
-	}
-	return (thread_t) *TAILQ_FIRST(&thread_list);*/
+
+	return thread_copy(TAILQ_FIRST(&threadList.list));
 }
 
 extern int thread_create(thread_t *newthread, void *(*func)(void *), void *funcarg)
