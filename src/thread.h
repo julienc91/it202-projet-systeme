@@ -22,7 +22,7 @@ typedef struct thread_t_
   void *retval;
   /* boolean */
   int already_done;
-} thread_t;
+} *thread_t;
 
 typedef struct Threads
 {
