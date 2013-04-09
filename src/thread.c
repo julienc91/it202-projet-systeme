@@ -45,7 +45,7 @@ extern int thread_create(thread_t *newthread, void *(*func)(void *), void *funca
 	*newthread = malloc(sizeof(struct thread_t_));
 	if(*newthread == NULL) {
 	  perror("malloc");
-	  exit(EXIT_FAILURE);
+	  return -1;
 	}
 
 	//Gestion des contextes
@@ -72,7 +72,16 @@ extern int thread_yield(void)
 
 	//Màj du currentThread dans la threadList
 	thread_t tmp = threadList.currentThread;
-	threadList.currentThread = TAILQ_FIRST(&(threadList.list));
+	thread_t thread;
+
+	//Recherche du premier thread prêt
+	TAILQ_FOREACH(thread, &(threadList.list), entries) {
+	  if(thread->state == READY && thread != tmp)
+	    break;
+	}
+	if(thread->state != READY)
+	  return 0;
+	threadList.currentThread = thread;
 	
 	//Changement de contexte
 	swapcontext(&(tmp->context), &(threadList.currentThread->context));
@@ -83,7 +92,18 @@ extern int thread_yield(void)
 extern int thread_join(thread_t thread, void **retval)
 {
 	thread_init_function();
-	//thread_yield();
+
+	//Echange de currentThread
+	thread_t tmp = threadList.currentThread;
+	threadList.currentThread = thread;
+
+	tmp->state = SLEEPING;
+	
+	//Changement de contexte
+	swapcontext(&(tmp->context), &(threadList.currentThread->context));
+
+	*retval = thread->retval;
+
 	return 0;
 }
 
@@ -92,10 +112,12 @@ extern void thread_exit(void *retval)
 
 	thread_init_function();
 	//Affectation de la valeur de retour du thread courant à retval
-	  // => Il faudrait peut-être un champ (void*) retval dans thread_t pour la récupérer facilement ?
+	threadList.currentThread->retval = retval;
 
 	//Terminaison du thread courant
-	TAILQ_FIRST(&threadList.list)->state = DEAD;
+	(threadList.currentThread)->state = DEAD;
+
+	thread_yield();
 
 	//Cette fonction ne doit pas terminer
 	label:
