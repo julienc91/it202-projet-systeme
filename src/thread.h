@@ -1,6 +1,9 @@
 #ifndef __THREAD_H__
 #define __THREAD_H__
 
+#include <ucontext.h>
+#include "queue.h"
+
 #define TRUE 1
 #define FALSE 0
 #define STACK_SIZE 64*1024
