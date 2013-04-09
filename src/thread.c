@@ -41,21 +41,27 @@ extern int thread_create(thread_t *newthread, void *(*func)(void *), void *funca
 {
 	thread_init_function();
 
+	//Allocation
+	*newthread = malloc(sizeof(struct thread_t_));
+	if(*newthread == NULL) {
+	  perror("malloc");
+	  exit(EXIT_FAILURE);
+	}
+
 	//Gestion des contextes
-	getcontext(&(newthread->context));
-	(newthread->context).uc_stack.ss_size = STACK_SIZE;
-	(newthread->context).uc_stack.ss_sp = malloc(STACK_SIZE);
-	(newthread->context).uc_link = NULL;
-	makecontext(&(newthread->context), (void (*)(void))func, 1, funcarg);
+	getcontext(&((*newthread)->context));
+	((*newthread)->context).uc_stack.ss_size = STACK_SIZE;
+	((*newthread)->context).uc_stack.ss_sp = malloc(STACK_SIZE);
+	((*newthread)->context).uc_link = NULL;
+	makecontext(&((*newthread)->context), (void (*)(void))func, 1, funcarg);
 
 	//Initialisation des attributs
-	newthread->already_done = FALSE;
-	newthread->state = READY;
+	(*newthread)->already_done = FALSE;
+	(*newthread)->state = READY;
+	(*newthread)->retval = NULL;
 
 	//Ajout en tête de la pile des threads
-	TAILQ_INSERT_HEAD(&(threadList.list), newthread, entries);
-
-	newthread->already_done = FALSE;
+	TAILQ_INSERT_HEAD(&(threadList.list), (*newthread), entries);
 
 	return 0;
 }
@@ -63,6 +69,8 @@ extern int thread_create(thread_t *newthread, void *(*func)(void *), void *funca
 extern int thread_yield(void)
 {
 	thread_init_function();
+
+	
 
 	return 0;
 }
