@@ -7,19 +7,23 @@ typedef enum { READY, SLEEPING, DEAD} STATE;
 
 typedef struct thread_t_
 {
-	/* state of the thread */
-	STATE state;
-	/* context of the thread*/
-	ucontext_t context;
-	/* contains pointers to next and previous node */
-	TAILQ_ENTRY(thread_t_) entries;
+  /* state of the thread */
+  STATE state;
+  /* context of the thread*/
+  ucontext_t context;
+  /* contains pointers to next and previous node */
+  TAILQ_ENTRY(thread_t_) entries;
+  /* return value */
+  void *retval;
+  /* boolean */
+  int already_done;
 } thread_t;
 
 typedef struct Threads
 {
-	int isInitialized;
-	thread_t mainThread;
-	TAILQ_HEAD(, thread_t_) list;
+  int isInitialized;
+  thread_t mainThread;
+  TAILQ_HEAD(, thread_t_) list;
 } Threads;
 
 
