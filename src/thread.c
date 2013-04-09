@@ -73,9 +73,7 @@ extern int thread_create(thread_t *newthread, void *(*func)(void *), void *funca
 	//Ajout en tête de la pile des threads
 	TAILQ_INSERT_HEAD(&(threadList.list), newthread, entries);
 
-	//Déplacement dans le contexte
-	ucontext_t previous;
-	swapcontext(&previous, &(newthread->context));
+	newthread->already_done = FALSE;
 
 	return 0;
 }
