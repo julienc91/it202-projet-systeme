@@ -3,6 +3,7 @@
 
 #define TRUE 1
 #define FALSE 0
+#define STACK_SIZE 64*1024
 
 typedef enum {READY, SLEEPING, DEAD} STATE;
 

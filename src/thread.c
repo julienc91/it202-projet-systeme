@@ -16,8 +16,8 @@ void thread_init_function(void)
 
 		// il faut récupérer le contexte courant et le mettre dans threadList.mainThread, ainsi que l'ajouter
 		thread_t *thread = malloc(sizeof(thread_t));
-		thread.state = READY;
-		thread.already_done = FALSE;
+		thread->state = READY;
+		thread->already_done = FALSE;
 
 		getcontext(&(thread->context));
 
@@ -52,10 +52,24 @@ extern thread_t thread_self(void)
 extern int thread_create(thread_t *newthread, void *(*func)(void *), void *funcarg)
 {
 	thread_init_function();
-	//Création d'un nouveau thread
 
-	//Exécution de func avec funcarg en paramètre
-	func(funcarg);
+	//Gestion des contextes
+	getcontext(&(newthread->context));
+	(newthread->context).uc_stack.ss_size = STACK_SIZE;
+	(newthread->context).uc_stack.ss_sp = malloc(STACK_SIZE);
+	(newthread->context).uc_link = NULL;
+	makecontext(&(newthread->context), (void (*)(void))func, 1, funcarg);
+
+	//Initialisation des attributs
+	newthread->already_done = FALSE;
+	newthread->state = READY;
+
+	//Ajout en tête de la pile des threads
+	TAILQ_INSERT_HEAD(&(threadList.list), newthread, entries);
+
+	//Déplacement dans le contexte
+	ucontext_t previous;
+	swapcontext(&previous, &(newthread->context));
 
 	return 0;
 }
@@ -75,6 +89,7 @@ extern int thread_join(thread_t thread, void **retval)
 
 extern void thread_exit(void *retval)
 {
+
 	thread_init_function();
 	//Affectation de la valeur de retour du thread courant à retval
 	  // => Il faudrait peut-être un champ (void*) retval dans thread_t pour la récupérer facilement ?
