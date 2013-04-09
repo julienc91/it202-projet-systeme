@@ -17,6 +17,8 @@ typedef struct thread_t_
   TAILQ_ENTRY(thread_t_) entries;
   /* return value */
   void *retval;
+  /* size of retval */
+  size_t retval_size;
   /* boolean */
   int already_done;
 } thread_t;
@@ -28,6 +30,7 @@ typedef struct Threads
   TAILQ_HEAD(, thread_t_) list;
 } Threads;
 
+thread_t thread_copy(thread_t *th);
 
 
 //*********************************//
