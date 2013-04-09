@@ -27,11 +27,10 @@ typedef struct thread_t_
 typedef struct Threads
 {
   int isInitialized;
-  thread_t *mainThread;
+  thread_t mainThread;
+  thread_t currentThread;
   TAILQ_HEAD(, thread_t_) list;
 } Threads;
-
-thread_t thread_copy(thread_t *th);
 
 
 //*********************************//

@@ -8,18 +8,6 @@
 
 static Threads threadList;
 
-thread_t thread_copy(thread_t *th){
-
-	thread_t copie;
-
-	copie.state = th->state;
-	copie.context = th->context;
-	copie.already_done = th->already_done;
-	copie.retval = th->retval;
-	copie.entries = th->entries ;
-	return copie;
-}
-
 void thread_init_function(void)
 {
 	if(!threadList.isInitialized)
@@ -28,16 +16,16 @@ void thread_init_function(void)
 		TAILQ_INIT(&threadList.list);
 
 		// il faut récupérer le contexte courant et le mettre dans threadList.mainThread, ainsi que l'ajouter
-		thread_t *thread = malloc(sizeof(thread_t));
+		thread_t thread = malloc(sizeof(struct thread_t_));
 		thread->state = READY;
 		thread->already_done = FALSE;
 		thread->retval = NULL;
-		
+
 		getcontext(&(thread->context));
 
 		threadList.mainThread = thread;
+		threadList.currentThread = thread;
 		TAILQ_INSERT_HEAD(&(threadList.list), thread, entries);
-
 	}
 }
 
@@ -46,7 +34,7 @@ extern thread_t thread_self(void)
 {
 	thread_init_function();
 
-	return thread_copy(TAILQ_FIRST(&threadList.list));
+	return threadList.currentThread;
 }
 
 extern int thread_create(thread_t *newthread, void *(*func)(void *), void *funcarg)
