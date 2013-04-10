@@ -30,6 +30,9 @@ typedef struct Threads
   thread_t mainThread;
   thread_t currentThread;
   TAILQ_HEAD(, thread_t_) list;
+  TAILQ_HEAD(, thread_t_) list_sleeping;
+  TAILQ_HEAD(, thread_t_) list_dead;
+
 } Threads;
 
 

@@ -15,7 +15,7 @@ int main() {
 
   uc.uc_stack.ss_size = 64*1024;
   uc.uc_stack.ss_sp = malloc(uc.uc_stack.ss_size);
-  uc.uc_link = NULL;
+  uc.uc_link = &previous;
   makecontext(&uc, (void (*)(void)) func, 1, 34);
 
   printf("je suis dans le main\n");

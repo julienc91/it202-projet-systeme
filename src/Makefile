@@ -1,5 +1,5 @@
 CC=gcc
-LFLAGS=-Wall -Wextra
+LFLAGS=-Wall -Wextra -g
 
 all: thread example contextes
 
@@ -13,6 +13,6 @@ example: thread.c example.c
 	$(CC) $(LFLAGS) $^ -o $@
 
 clean:
-	@rm contextes
+	@rm contextes example
 	@rm -f *.o
 	@echo "Cleaned."
