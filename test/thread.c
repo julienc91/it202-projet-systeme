@@ -11,16 +11,22 @@
 static Threads threadList ;
 static ucontext_t return_t ;
 
+//fonction appelée à la fin d'un thread, via uc_link
 void thread_return()
 {
 	(threadList.currentThread)->state = DEAD;
-	(threadList.currentThread)->retval = NULL; //(threadList.currentThread)->context.uc_stack.ss_sp;
 	TAILQ_REMOVE(&(threadList.list), threadList.currentThread, entries);
 	TAILQ_INSERT_TAIL(&(threadList.list_dead), threadList.currentThread, entries);
 
 	thread_yield();
 }
+//fonction appelée dans le contexte lors de la création d'un thread
+void stock_return(void * funcarg, void* (*func)())
+{
+	threadList.currentThread->retval = func(funcarg);
+}                                      
 
+//fonction appelée à la terminaison du programme pour libérer la mémoire
 void threads_destroy()
 {
 	thread_t item, tmp_item;
@@ -118,7 +124,9 @@ extern int thread_create(thread_t *newthread, void *(*func)(void *), void *funca
 	(*newthread)->valgrind_stackid = VALGRIND_STACK_REGISTER(((*newthread)->context).uc_stack.ss_sp,((*newthread)->context).uc_stack.ss_sp + ((*newthread)->context).uc_stack.ss_size);
 
 	((*newthread)->context).uc_link = &return_t;
-	makecontext(&((*newthread)->context), (void (*)(void))func, 1, funcarg);
+	//makecontext(&((*newthread)->context), (void (*)(void))func, 1, funcarg);
+	makecontext(&((*newthread)->context), (void (*)(void))*stock_return, 2, funcarg, (void (*)(void))func);
+
 
 	//Initialisation des attributs
 	(*newthread)->already_done = FALSE;
