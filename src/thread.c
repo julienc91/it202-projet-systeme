@@ -134,7 +134,7 @@ extern int thread_create(thread_t *newthread, void *(*func)(void *), void *funca
 	(*newthread)->retval = NULL;
 
 	//Ajout en tête de la pile des threads
-	TAILQ_INSERT_HEAD(&(threadList.list), (*newthread), entries);
+	TAILQ_INSERT_TAIL(&(threadList.list), (*newthread), entries);
 
 	getcontext(&(threadList.currentThread->context));
 	
