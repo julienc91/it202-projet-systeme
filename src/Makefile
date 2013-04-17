@@ -4,13 +4,13 @@ LFLAGS=-Wall -Wextra -g -lpthread
 all: thread example contextes
 
 contextes: contextes.c
-	$(CC) $(LFLAGS) -o $@ $^
+	$(CC)  -o $@ $^ $(LFLAGS)
 
 thread:	thread.c
-	$(CC) $(LFLAGS) -c $^
+	$(CC)  -c $^ $(LFLAGS)
 
 example: thread.c example.c
-	$(CC) $(LFLAGS) $^ -o $@
+	$(CC)  $^ -o $@ $(LFLAGS)
 
 clean:
 	@rm contextes example
