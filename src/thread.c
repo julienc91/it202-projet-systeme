@@ -21,7 +21,7 @@ int get_cores(void)
 	size_t size = 0;
 
 	int num_proc = 0;
-	while(getdelim(&arg, &size, 0, cmdline) != -1)
+	while(getline(&arg, &size, cmdline) != -1)
 	{
 		arg[9] = 0;
 		if(strcmp(arg, "processor") == 0)
@@ -92,6 +92,7 @@ void thread_init_function(void)
 {
 	if(!threadList.isInitialized)
 	{
+
 		threadList.isInitialized = TRUE;
 		TAILQ_INIT(&threadList.list);
 		TAILQ_INIT(&threadList.list_sleeping);
