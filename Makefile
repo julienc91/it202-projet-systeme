@@ -19,7 +19,7 @@ bin/thread.o:	src/thread.h src/thread.c
 
 
 
-$(OBJECTS): $(SOURCES) bin/thread.o
+$(OBJECTS): $(SOURCES) bin/thread.o src/thread.c
 	@echo -n " Compiling" $@ "... "
 	$(CC) $(CFLAGS) -o $@ $(subst bin,test,$(@:%=%.c)) bin/thread.o $(LDFLAGS)
 	@echo "Done."
