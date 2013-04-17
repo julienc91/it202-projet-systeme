@@ -1,0 +1,162 @@
+\documentclass[a4paper,11pt]{article}
+
+
+\usepackage{geometry}
+\usepackage[utf8]{inputenc}
+\usepackage[francais]{babel}
+\usepackage[T1]{fontenc}
+%\usepackage{tikz-uml}
+\usepackage{relsize}
+\usepackage{color}
+\definecolor{dkgreen}{rgb}{0,0.6,0}
+\definecolor{gray}{rgb}{0.5,0.5,0.5}
+\definecolor{mauve}{rgb}{0.58,0,0.82}
+
+\usepackage{listings}
+\usepackage{float}
+\usepackage{kpfonts}
+
+\usepackage{graphicx}
+
+\lstset{
+language=C,
+basicstyle=\footnotesize,
+backgroundcolor=\color{white},
+keywordstyle=\color{red},
+commentstyle=\color{dkgreen},
+stringstyle=\color{mauve},
+numberstyle=\color{red},
+morekeywords={string},
+frame=BL,
+aboveskip=1em,
+belowskip=2em,
+}
+\lstset{
+  literate={ù}{{\`u}}1
+           {é}{{\'e}}1
+           {è}{{\'e}}1
+           {à}{{\`a}}1
+}
+
+
+\lstdefinelanguage{tikzuml}{language=[LaTeX]TeX, classoffset=0, morekeywords={umlbasiccomponent, umlprovidedinterface, umlrequiredinterface, umldelegateconnector, umlassemblyconnector, umlVHVassemblyconnector, umlHVHassemblyconnector, umlnote, umlusecase, umlactor, umlinherit, umlassoc, umlVHextend, umlinclude, umlstateinitial, umlbasicstate, umltrans, umlstatefinal, umlVHtrans, umlHVtrans, umldatabase, umlmulti, umlobject, umlfpart, umlcreatecall, umlclass, umlvirt, umlunicompo, umlimport, umlaggreg}, classoffset=1, morekeywords={umlcomponent, umlsystem, umlstate, umlseqdiag, umlcall, umlcallself, umlfragment, umlpackage}, classoffset=0,  sensitive=true, morecomment=[l]{\%}}
+
+\geometry{margin=2.5cm}
+\geometry{headheight=15pt}
+
+\usepackage{fancyhdr}
+\usepackage{fancyvrb}
+\usepackage{float}
+\usepackage[footnote,smaller]{acronym}
+
+\pagestyle{fancy}
+\rhead{IT202 - Projet de Système d'Exploitation}
+
+%\acrodef{LABRI}{Laboratoire Bordelais de Recherche en Informatique}
+
+\begin{document}
+
+\begin{titlepage}
+  \begin{center}
+
+    \textsc{\LARGE IT202 - Projet de Système d'Exploitation}\\[2cm]
+    \textsc{\large Rapport Intermédiaire}\\[3cm]
+    Maxime \textsc{Bellier} \ \ \ Louis \textsc{Boucherie} \ \ \ Jean-Michaël \textsc{Celerier}\\
+    Julien \textsc{Chaumont} \ \ \ Bazire \textsc{Houssin} \ \ \ Sylvain \textsc{Vaglica}\\[1cm]
+    \textsc{Groupe 3}\\[1.5cm]
+    \textsc{\large 23/04/2013 }\\[1.5cm]
+    \includegraphics[width=8cm]{logo.png}
+
+  \end{center}
+  \vspace{3cm}
+
+\end{titlepage}
+
+\clearpage
+
+%commutation de contexte
+
+\section*{Introduction}
+
+Le projet de Système d'Exploitation consiste en la réalisation d'une bibliothèque de threads. Les tests ayant déjà été implémentés et fixés en amont, il s'agit d'un développement par les tests. Ce premier rapport présentera le travail réalisé à l'issu des trois premières semaines, ainsi que les objectifs attendus d'ici la fin du projet.
+%objectifs
+
+\section{Définition des structures de données}
+
+L'une des premières étapes aura été de définir les structures de données à adopter à partir des résultats attendus et de l'implémentation des tests. Cette première partie décriera de manière détaillée les structures choisies.
+
+\subsection{Le type \texttt{thread\_t}}
+
+Le type \texttt{thread\_t} est en fait la base de notre implémentation: elle représente un thread en mémoire. Sa définition est donnée en figure \ref{threadt}.
+
+\begin{figure}[H]
+\begin{lstlisting}
+typedef enum {READY, SLEEPING, DEAD} STATE;
+
+typedef struct thread_t_
+{
+  STATE state;
+  ucontext_t context;
+  void *retval;
+  int valgrind_stackid;
+  TAILQ_ENTRY(thread_t_) entries;
+} *thread_t;
+\end{lstlisting}
+\caption{Implémentation de \texttt{thread\_t}}
+\label{threadt}
+\end{figure}
+
+Ses attributs ont chacun leur utilité:
+\begin{itemize}
+  \item \texttt{state}: état du thread, à savoir prêt à l'exécution, endormi, ou mort;
+  \item \texttt{context}: contexte d'exécution du thread, géré à l'aide des fonctions de la librairie standard \texttt{getcontext}, \texttt{setcontext}, \texttt{makecontext} et \texttt{swapcontext}, déclarées dans \texttt{ucontext.h};
+  \item \texttt{retval}: pointeur vers la valeur de retour de la fonction exécutée dans le thread
+  \item \texttt{valgrind\_stackid}: permet à l'utilitaire \textit{Valgrind} de mieux gérer la détection de problèmes de mémoire dans les piles;
+  \item \texttt{entries}: structure contenant des pointeurs vers les threads suivant et précédent. Il s'agit en fait d'une liste doublement chaînée utilisant l'implémentation de \textit{Queue BSD}\footnote{http://linux.die.net/include/sys/queue.h}.
+\end{itemize}
+
+\subsection{Le type \texttt{Threads}}
+
+Le type \texttt{Threads} a été mis en place afin de gérer différents threads au cours de l'exécution d'un programme. Il s'agit en fait d'une file contenant les différents threads créés par le programmeur, ce qui permet de passer aisément d'un thread à un autre.
+
+Comme évoqué précédemment, c'est l'implémentation de \textit{Queue BSD} qui est utilisée ici. Cette structure de file assure le passage d'un thread vers le thread suivant ou précédent en temps constant (situtation d'un changement de contexte \textit{``naturel''}). La définition du type \texttt{Threads} est donnée en figure \ref{threadst}.
+
+\begin{figure}[H]
+\begin{lstlisting}
+typedef struct Threads
+{
+  int is_initialized;
+  thread_t main_thread;
+  thread_t current_thread;
+  TAILQ_HEAD(, thread_t_) list;
+  TAILQ_HEAD(, thread_t_) list_sleeping;
+  TAILQ_HEAD(, thread_t_) list_dead;
+} Threads;
+\end{lstlisting}
+\caption{Implémentation du type \texttt{Threads}}
+\label{threadst}
+\end{figure}
+
+Le rôle de chaque attribut est le suivant:
+\begin{itemize}
+  \item \texttt{is\_initialized}: booléen indiquant si la liste a déjà été initialisée par la création d'un premier thread ou non;
+  \item \texttt{main\_thread}: thread correspondant au contexte de base du programme (celui ayant été créé lors de l'initialisation);
+  \item \texttt{current\_thread}: thread en train d'être exécuté;
+  \item \texttt{list}: liste des threads prêts à être exécutés;
+  \item \texttt{list\_sleeping}: liste des threads endormis;
+  \item \texttt{list\_dead}: liste des threads morts.
+\end{itemize}
+
+%interrogations
+%fonctionnement
+
+\section{L'avancement actuel du projet}
+
+%tests
+%valgrind
+
+\section{Nos objectifs pour la suite du projet}
+
+%nos objectifs à venir
+
+\end{document}
