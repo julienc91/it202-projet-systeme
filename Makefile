@@ -71,6 +71,10 @@ check:	thread.o $(OBJECTS)
 	@bin/61-Voy_Commerce 8 1234
 	@echo ""
 
+	@echo " * * * Testing '71-Somme_Tableau 64' * * *"
+	@bin/71-Somme_Tableau 64
+	@echo ""
+
 clean:
 	@rm -f $(OBJECTS)
 	@rm -f bin/*.o
