@@ -23,7 +23,7 @@ typedef struct thread_t_
   /* boolean */
   int already_done;
   int valgrind_stackid;
-  
+
 } *thread_t;
 
 typedef struct Threads
@@ -35,13 +35,15 @@ typedef struct Threads
   TAILQ_HEAD(, thread_t_) list_sleeping;
   TAILQ_HEAD(, thread_t_) list_dead;
 
+  pthread_t *tab;
+
 } Threads;
 
 void thread_return();
 void stock_return(void * funcarg, void* (*func)());
 void threads_destroy();
 void thread_init_function(void);
-
+int get_cores(void);
 
 
 

@@ -19,6 +19,8 @@ int main(int argc, char *argv[])
   void *retval1, *retval2;
   int err;
 
+  printf("Nb de cores : %d\n\n", get_cores());
+
   printf("le main lance 2 threads...\n");
   err = thread_create(&thread1, threadfunc, "thread1");
   assert(!err);
