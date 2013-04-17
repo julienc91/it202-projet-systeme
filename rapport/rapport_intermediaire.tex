@@ -147,8 +147,25 @@ Le rôle de chaque attribut est le suivant:
   \item \texttt{list\_dead}: liste des threads morts.
 \end{itemize}
 
-%interrogations
-%fonctionnement
+\subsection{Fonctionnement}
+
+L'initialisation des structures de données a lieu lors du premier appel à l'une des fonctions de la bibliothèque. Pour plus de facilité, la structure \texttt{Threads} utilisée est en fait définie de manière statique avec une portée globale.
+
+\subsubsection*{L'initialisation}
+
+L'initialisation de \texttt{Threads} consiste simplement en la création des différentes listes en attribut, ainsi qu'en l'initialisation d'un premier thread correspondant au contexte d'appel. Ce thread sera défini comme étant le thread principal.
+
+De plus, l'instruction suivante:
+\begin{center}
+\verb[atexit(threads_destroy);[
+\end{center}
+assure la libération mémoire de l'intégralité des allocations dynamiques effectuées à la fin du programme.
+
+\subsubsection*{Création d'un thread}
+
+La création d'un thread se résume en l'allocation dynamique d'une variable \texttt{thread\_t} puis en son initialisation. Il ne reste ensuite qu'à l'insérer à la fin de la liste des threads prêts de la structure \texttt{Threads}.
+
+\subsubsection*{Passage de main}
 
 \section{L'avancement actuel du projet}
 
