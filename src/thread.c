@@ -4,12 +4,33 @@
 #include <malloc.h>
 #include <ucontext.h> /* ne compile pas avec -std=c89 ou -std=c99 */
 #include <valgrind/valgrind.h>
+
+#include <pthread.h>
+#include <string.h>
 #include "queue.h"
 #include "thread.h"
 
 
 static Threads threadList ;
-static ucontext_t return_t ;
+static ucontext_t return_t;
+
+int get_cores(void)
+{
+	FILE *cmdline = fopen("/proc/cpuinfo", "rb");
+	char *arg = 0;
+	size_t size = 0;
+
+	int num_proc = 0;
+	while(getline(&arg, &size, cmdline) != -1)
+	{
+		arg[9] = 0;
+		if(strcmp(arg, "processor") == 0)
+			++num_proc;
+	}
+	free(arg);
+	fclose(cmdline);
+	return num_proc;
+}
 
 //fonction appelée à la fin d'un thread, via uc_link
 void thread_return()
@@ -24,7 +45,7 @@ void thread_return()
 void stock_return(void * funcarg, void* (*func)())
 {
 	threadList.currentThread->retval = func(funcarg);
-}                                      
+}
 
 //fonction appelée à la terminaison du programme pour libérer la mémoire
 void threads_destroy()
@@ -33,53 +54,60 @@ void threads_destroy()
 	free(return_t.uc_stack.ss_sp);
 
 	for (item = TAILQ_FIRST(&(threadList.list)); item != NULL; item = tmp_item)
-        {
-                tmp_item = TAILQ_NEXT(item, entries);
-				/* Retire l'élément de la liste*/
-				TAILQ_REMOVE(&(threadList.list), item, entries);
+	{
+		tmp_item = TAILQ_NEXT(item, entries);
+		/* Retire l'élément de la liste*/
+		TAILQ_REMOVE(&(threadList.list), item, entries);
 
-				/* Libère l'espace alloué */
-				VALGRIND_STACK_DEREGISTER(item->valgrind_stackid);
-				free(item->context.uc_stack.ss_sp);
-				free(item);
-        }
-        
+		/* Libère l'espace alloué */
+		VALGRIND_STACK_DEREGISTER(item->valgrind_stackid);
+		free(item->context.uc_stack.ss_sp);
+		free(item);
+	}
+
    	for (item = TAILQ_FIRST(&(threadList.list_sleeping)); item != NULL; item = tmp_item)
-        {
-                tmp_item = TAILQ_NEXT(item, entries);
-				/* Retire l'élément de la liste*/
-				TAILQ_REMOVE(&(threadList.list_sleeping), item, entries);
+	{
+		tmp_item = TAILQ_NEXT(item, entries);
+		/* Retire l'élément de la liste*/
+		TAILQ_REMOVE(&(threadList.list_sleeping), item, entries);
 
-				/* Libère l'espace alloué */
-				free(item->context.uc_stack.ss_sp);
-				free(item);
-        }
-        
-    for (item = TAILQ_FIRST(&(threadList.list_dead)); item != NULL; item = tmp_item)
-        {
-                tmp_item = TAILQ_NEXT(item, entries);
-				/* Retire l'élément de la liste*/
-				TAILQ_REMOVE(&(threadList.list_dead), item, entries);
+		/* Libère l'espace alloué */
+		free(item->context.uc_stack.ss_sp);
+		free(item);
+	}
 
-				/* Libère l'espace alloué */
-				free(item->context.uc_stack.ss_sp);
-				free(item);
-        }
+	for (item = TAILQ_FIRST(&(threadList.list_dead)); item != NULL; item = tmp_item)
+	{
+		tmp_item = TAILQ_NEXT(item, entries);
+		/* Retire l'élément de la liste*/
+		TAILQ_REMOVE(&(threadList.list_dead), item, entries);
+
+		/* Libère l'espace alloué */
+		free(item->context.uc_stack.ss_sp);
+		free(item);
+	}
 }
 
 void thread_init_function(void)
 {
 	if(!threadList.isInitialized)
 	{
+
 		threadList.isInitialized = TRUE;
 		TAILQ_INIT(&threadList.list);
 		TAILQ_INIT(&threadList.list_sleeping);
 		TAILQ_INIT(&threadList.list_dead);
-		
+
 		atexit(threads_destroy);
 
 		// il faut récupérer le contexte courant et le mettre dans threadList.mainThread, ainsi que l'ajouter
 		thread_t thread = malloc(sizeof(struct thread_t_));
+		if(thread == NULL)
+		{
+			perror("malloc");
+			return;
+		}
+
 		thread->state = READY;
 		thread->already_done = FALSE;
 		thread->retval = NULL;
@@ -89,11 +117,17 @@ void thread_init_function(void)
 		threadList.mainThread = thread;
 		threadList.currentThread = thread;
 		TAILQ_INSERT_HEAD(&(threadList.list), thread, entries);
-		
-		
+
+
 		getcontext(&return_t);
 		return_t.uc_stack.ss_size = STACK_SIZE;
 		return_t.uc_stack.ss_sp = malloc(STACK_SIZE);
+		if(return_t.uc_stack.ss_sp == NULL)
+		{
+			perror("malloc");
+			return;
+		}
+
 		return_t.uc_link = NULL;
 		makecontext(&return_t, (void (*)(void))thread_return, 0);
 	}
@@ -112,19 +146,26 @@ extern int thread_create(thread_t *newthread, void *(*func)(void *), void *funca
 
 	//Allocation
 	*newthread = malloc(sizeof(struct thread_t_));
-	if(*newthread == NULL) {
-	  perror("malloc");
-	  return -1;
+	if(*newthread == NULL)
+	{
+		perror("malloc");
+		return -1;
 	}
 
 	//Gestion des contextes
 	getcontext(&((*newthread)->context));
 	((*newthread)->context).uc_stack.ss_size = STACK_SIZE;
 	((*newthread)->context).uc_stack.ss_sp = malloc(STACK_SIZE);
+	if(((*newthread)->context).uc_stack.ss_sp == NULL)
+	{
+		free(*newthread);
+		perror("malloc");
+		return -1;
+	}
+
 	(*newthread)->valgrind_stackid = VALGRIND_STACK_REGISTER(((*newthread)->context).uc_stack.ss_sp,((*newthread)->context).uc_stack.ss_sp + ((*newthread)->context).uc_stack.ss_size);
 
 	((*newthread)->context).uc_link = &return_t;
-	//makecontext(&((*newthread)->context), (void (*)(void))func, 1, funcarg);
 	makecontext(&((*newthread)->context), (void (*)(void))*stock_return, 2, funcarg, (void (*)(void))func);
 
 
@@ -137,11 +178,11 @@ extern int thread_create(thread_t *newthread, void *(*func)(void *), void *funca
 	TAILQ_INSERT_TAIL(&(threadList.list), (*newthread), entries);
 
 	getcontext(&(threadList.currentThread->context));
-	
+
 	return 0;
 }
 /*
- * Fonctionnement : yield() appelé depuis le main envoie vers le sommet de la file, 
+ * Fonctionnement : yield() appelé depuis le main envoie vers le sommet de la file,
  * sinon renvoie vers le main
  */
 extern int thread_yield(void)
@@ -150,7 +191,7 @@ extern int thread_yield(void)
 
 	thread_t tmp = threadList.currentThread;
 	thread_t thread;
-	
+
 	if ((tmp == threadList.mainThread) || (threadList.mainThread->state != READY))
 	{
 		//Recherche du premier thread prêt
@@ -158,7 +199,7 @@ extern int thread_yield(void)
 		{
 			thread = TAILQ_FIRST(&(threadList.list));
 			//si le premier thread est le thread courant, on prend le suivant
-			if ((thread == tmp) && (TAILQ_NEXT(thread, entries) != NULL)) 
+			if ((thread == tmp) && (TAILQ_NEXT(thread, entries) != NULL))
 			{
 				thread = TAILQ_NEXT(thread, entries);
 			}
@@ -183,7 +224,7 @@ extern int thread_yield(void)
 
 		//Màj du currentThread dans la threadList
 		threadList.currentThread = thread;
-		
+
 		//Changement de contexte
 		swapcontext(&(tmp->context), &(threadList.currentThread->context));
 	}
@@ -214,26 +255,26 @@ extern int thread_join(thread_t thread, void **retval)
 		switch(thread->state)
 		{
 			case(READY):
-			//Echange de currentThread
-			tmp = threadList.currentThread;
-			threadList.currentThread = thread;
+				//Echange de currentThread
+				tmp = threadList.currentThread;
+				threadList.currentThread = thread;
 
-			//mise en sommeil de l'ancien thread courant
-			tmp->state = SLEEPING;
-			TAILQ_REMOVE(&(threadList.list), tmp, entries);
-			TAILQ_INSERT_TAIL(&(threadList.list_sleeping), tmp, entries);
-		
-			//Changement de contexte
-			swapcontext(&(tmp->context), &(threadList.currentThread->context));
-			break;
-			
+				//mise en sommeil de l'ancien thread courant
+				tmp->state = SLEEPING;
+				TAILQ_REMOVE(&(threadList.list), tmp, entries);
+				TAILQ_INSERT_TAIL(&(threadList.list_sleeping), tmp, entries);
+
+				//Changement de contexte
+				swapcontext(&(tmp->context), &(threadList.currentThread->context));
+				break;
+
 			case(SLEEPING):
-			tmp->state = SLEEPING;
-			TAILQ_REMOVE(&(threadList.list), tmp, entries);
-			TAILQ_INSERT_TAIL(&(threadList.list_sleeping), tmp, entries);
-			thread_yield();
-			break;
-			
+				tmp->state = SLEEPING;
+				TAILQ_REMOVE(&(threadList.list), tmp, entries);
+				TAILQ_INSERT_TAIL(&(threadList.list_sleeping), tmp, entries);
+				thread_yield();
+				break;
+
 			default:
 			break;
 		}
