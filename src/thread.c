@@ -109,7 +109,6 @@ void thread_init_function(void)
 		}
 
 		thread->state = READY;
-		thread->already_done = FALSE;
 		thread->retval = NULL;
 
 		getcontext(&(thread->context));
@@ -170,7 +169,6 @@ extern int thread_create(thread_t *newthread, void *(*func)(void *), void *funca
 
 
 	//Initialisation des attributs
-	(*newthread)->already_done = FALSE;
 	(*newthread)->state = READY;
 	(*newthread)->retval = NULL;
 
@@ -192,22 +190,25 @@ extern int thread_yield(void)
 	thread_t tmp = threadList.currentThread;
 	thread_t thread;
 
-	if ((tmp == threadList.mainThread) || (threadList.mainThread->state != READY))
-	{
 		//Recherche du premier thread prêt
 		if(!TAILQ_EMPTY(&threadList.list)) //si il y a des éléments dans la liste des threads prêts
 		{
 			thread = TAILQ_FIRST(&(threadList.list));
+			/*
 			//si le premier thread est le thread courant, on prend le suivant
 			if ((thread == tmp) && (TAILQ_NEXT(thread, entries) != NULL))
 			{
 				thread = TAILQ_NEXT(thread, entries);
-			}
+			}*/
 			//si le thread courant est le seul thread prêt, on continue l'exécution
-			else if ((thread == tmp) && (TAILQ_NEXT(thread, entries) == NULL))
+			if ((thread == tmp) && (TAILQ_NEXT(thread, entries) == NULL))
 			{
 				return 0;
 			}
+			
+			TAILQ_REMOVE(&(threadList.list), thread, entries);
+			TAILQ_INSERT_TAIL(&(threadList.list), thread, entries);
+
 		}
 		else if (!TAILQ_EMPTY(&threadList.list_sleeping))// si il n'y a plus que des threads endormis
 		{
@@ -224,15 +225,9 @@ extern int thread_yield(void)
 
 		//Màj du currentThread dans la threadList
 		threadList.currentThread = thread;
-
+		
 		//Changement de contexte
 		swapcontext(&(tmp->context), &(threadList.currentThread->context));
-	}
-	else
-	{
-		threadList.currentThread = threadList.mainThread;
-		swapcontext(&(tmp->context), &(threadList.currentThread->context));
-	}
 	return 0;
 }
 
