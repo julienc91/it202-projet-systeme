@@ -147,14 +147,36 @@ Le rôle de chaque attribut est le suivant:
   \item \texttt{list\_dead}: liste des threads morts.
 \end{itemize}
 
-%interrogations
-%fonctionnement
+\subsection{Fonctionnement}
+
+L'initialisation des structures de données a lieu lors du premier appel à l'une des fonctions de la bibliothèque. Pour plus de facilité, la structure \texttt{Threads} utilisée est en fait définie de manière statique avec une portée globale.
+
+\subsubsection*{L'initialisation}
+
+L'initialisation de \texttt{Threads} consiste simplement en la création des différentes listes en attribut, ainsi qu'en l'initialisation d'un premier thread correspondant au contexte d'appel. Ce thread sera défini comme étant le thread principal.
+
+De plus, l'instruction suivante:
+\begin{center}
+\verb[atexit(threads_destroy);[
+\end{center}
+assure la libération mémoire de l'intégralité des allocations dynamiques effectuées à la fin du programme.
+
+\subsubsection*{Création d'un thread}
+
+La création d'un thread se résume en l'allocation dynamique d'une variable \texttt{thread\_t} puis en son initialisation. Il ne reste ensuite qu'à l'insérer à la fin de la liste des threads prêts de la structure \texttt{Threads}.
+
+\subsubsection*{Passage de main}
 
 \section{L'avancement actuel du projet}
 
+\subsubsection{Implémentation}
+
+L'ensemble des fonctions figurant dans le fichier \textit{thread.h} a été implémenté. Les tests pré-existants ont permis de véfifier au fur et à mesure du développement que le code en cours d'écriture était en adéquation avec les prérequis.
+
 \subsection{Tests}
 
-A l'heure actuelle, la totalité des tests ayant été définis au préalable passe avec succès. Mieux encore: la bibliothèque créée pour le projet dépasse la bibliothèque \textit{pthread} sur le test de calcul du $n^{i\`eme}$ élément de la suite de Fibonacci! En effet, le calcul s'effectue sans problème jusqu'au $22^{i\`eme}$ terme, alors que le programme s'arrête dès le $13^{ième}$ terme en utilisant \textit{pthread}.\\
+
+A l'heure actuelle, la totalité des tests ayant été définis au préalable passe avec succès. Mieux encore: la bibliothèque créée pour le projet dépasse la bibliothèque \textit{pthread} sur le test de calcul du $n^{ieme}$ élément de la suite de Fibonacci! En effet, le calcul s'effectue sans problème jusqu'au $22^{ieme}$ terme, alors que le programme s'arrête dès le $13^{ieme}$ terme en utilisant \textit{pthread}.\\
 %tests
 
 Des tests non prévus par le sujet ont également été testés. Ces tests ont été choisis pour le grand nombre de threads qu'ils créent.
@@ -168,7 +190,6 @@ Nous les avons également lancé avec valgrind et aucun ne fait de fuite mémoir
 
 \section{Nos objectifs pour la suite du projet}
 
-%nos objectifs à venir
-
+Actuellement, l'équipe s'oriente sur le fait de rendre le projet compatible avec les architectures multic\oe urs. En parallèle, de nouveaux tests sont créés pour vérifier l'intégrité du code source. Les autres objectifs secondaires n'ont pour le moment pas été choisis et dépendront principalement de l'avancement et de la réussite des travaux actuellement en cours.
 
 \end{document}
