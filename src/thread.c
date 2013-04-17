@@ -243,7 +243,10 @@ extern int thread_join(thread_t thread, void **retval)
 
 	if (thread == NULL)
 	{
-		*retval = NULL;
+		if (retval != NULL)
+		{
+			*retval = NULL;
+		}
 		return 0;
 	}
 
@@ -277,6 +280,11 @@ extern int thread_join(thread_t thread, void **retval)
 		}
 	}
 
+	if (retval == NULL)
+	{	
+		return 0;
+	}
+	
 	*retval = thread->retval;
 
 	return 0;
