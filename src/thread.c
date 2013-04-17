@@ -32,6 +32,12 @@ int get_cores(void)
 	return num_proc;
 }
 
+void * thread_pthread_handler(void * v)
+{
+
+	return v;
+}
+
 //fonction appelée à la fin d'un thread, via uc_link
 void thread_return()
 {
@@ -86,13 +92,35 @@ void threads_destroy()
 		free(item->context.uc_stack.ss_sp);
 		free(item);
 	}
+
+	unsigned int i;
+	size_t n_cores = get_cores();
+	for(i = 0; i < n_cores; i++)
+	{
+		pthread_join(*(threadList.pthreads[i]), NULL);
+		free(threadList.pthreads[i]);
+	}
+
+	free(threadList.pthreads);
+
 }
 
 void thread_init_function(void)
 {
 	if(!threadList.isInitialized)
 	{
+		// Code pour le multicoeur
+		size_t n_cores = get_cores();
+		unsigned int i;
+		threadList.pthreads = calloc(n_cores, sizeof(pthread_t*));
+		for(i = 0; i < n_cores; i++)
+		{
+			threadList.pthreads[i] = malloc(sizeof(pthread_t));
+			pthread_create(threadList.pthreads[i], NULL, thread_pthread_handler, NULL);
+		}
 
+
+		// Code de base
 		threadList.isInitialized = TRUE;
 		TAILQ_INIT(&threadList.list);
 		TAILQ_INIT(&threadList.list_sleeping);
@@ -101,27 +129,32 @@ void thread_init_function(void)
 		atexit(threads_destroy);
 
 		// il faut récupérer le contexte courant et le mettre dans threadList.mainThread, ainsi que l'ajouter
-		thread_t thread = malloc(sizeof(struct thread_t_));
+		thread_t thread = calloc(1, sizeof(struct thread_t_));
 		if(thread == NULL)
 		{
 			perror("malloc");
 			return;
 		}
 
+		// initialisation du thread
 		thread->state = READY;
 		thread->already_done = FALSE;
 		thread->retval = NULL;
-
 		getcontext(&(thread->context));
+		thread->valgrind_stackid = VALGRIND_STACK_REGISTER(thread->context.uc_stack.ss_sp, thread->context.uc_stack.ss_sp + thread->context.uc_stack.ss_size);
+
 
 		threadList.mainThread = thread;
 		threadList.currentThread = thread;
 		TAILQ_INSERT_HEAD(&(threadList.list), thread, entries);
 
 
+
 		getcontext(&return_t);
 		return_t.uc_stack.ss_size = STACK_SIZE;
 		return_t.uc_stack.ss_sp = malloc(STACK_SIZE);
+
+		memset(return_t.uc_stack.ss_sp , 0, STACK_SIZE);
 		if(return_t.uc_stack.ss_sp == NULL)
 		{
 			perror("malloc");

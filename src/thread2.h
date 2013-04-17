@@ -35,7 +35,7 @@ typedef struct Threads
   TAILQ_HEAD(, thread_t_) list_sleeping;
   TAILQ_HEAD(, thread_t_) list_dead;
 
-  pthread_t *tab;
+  pthread_t **pthreads;
 
 } Threads;
 

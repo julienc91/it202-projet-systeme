@@ -1,5 +1,5 @@
 CC=gcc
-LFLAGS=-Wall -Wextra -g
+LFLAGS=-Wall -Wextra -g -lpthread
 
 all: thread example contextes
 
