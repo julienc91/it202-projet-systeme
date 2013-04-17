@@ -9,7 +9,7 @@
 
 #include "thread.h"
 #include "61-Voy_types.h"
-#include "61-Voy_job.h"
+
 
 
 /* macro de mesure de temps, retourne une valeur en µsecondes */
@@ -28,7 +28,7 @@ char   **Argv ;
 int    minimum ;
 
 /* liste des tâches */
-TSPqueue     q ;
+//TSPqueue     q ;
 
 /* tableau des distances */
 DTab_t    distance ;
@@ -165,11 +165,11 @@ void tsp (int hops, int len, Path_t path, int *cuts)
 			if (len +  distance[0][path[NrTowns-1]]< minimum)
 			{
 				minimum = len +  distance[0][path[NrTowns-1]];
-				printf ("found path len = %3d :", minimum) ;
-				for (i=0; i < NrTowns; i++)
-					 printf ("%2d ", path[i]) ;
-				printf ("\n") ;
-				printPath(path);
+				/* printf ("found path len = %3d :", minimum) ; */
+				/* for (i=0; i < NrTowns; i++) */
+				/* 	 printf ("%2d ", path[i]) ; */
+				/* printf ("\n") ; */
+				/* printPath(path); */
 			}
 			pthread_mutex_unlock(&mut);
 		}
@@ -255,7 +255,7 @@ int main (int argc, char **argv)
 {
    unsigned long temps;
    int i;
-   Path_t path;
+
    struct timeval t1, t2;
 
    int *cuts; /* Juste à des fins de statistiques pour savoir combien de fois on a pu optimiser */
@@ -272,7 +272,7 @@ int main (int argc, char **argv)
 
    printf ("ncities = %3d\n", atoi(argv[1])) ;
 
-   init_queue(&q);
+   /* init_queue(&q); */
    genmap () ;
 
    cuts = calloc(NrTowns, sizeof(long));
@@ -280,9 +280,9 @@ int main (int argc, char **argv)
    gettimeofday(&t1,NULL);
 
 
-   for(i=0;i<MAXE;i++)
-     path[i] = -1 ;
-   path [0] = 0;
+   /* for(i=0;i<MAXE;i++) */
+   /*   path[i] = -1 ; */
+   /* path [0] = 0; */
 
 
    //tsp(1,0,path,cuts);
