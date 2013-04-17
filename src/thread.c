@@ -4,12 +4,33 @@
 #include <malloc.h>
 #include <ucontext.h> /* ne compile pas avec -std=c89 ou -std=c99 */
 #include <valgrind/valgrind.h>
+
+#include <pthread.h>
+#include <string.h>
 #include "queue.h"
 #include "thread.h"
 
 
 static Threads threadList ;
-static ucontext_t return_t = 0;
+static ucontext_t return_t;
+
+int get_cores(void)
+{
+	FILE *cmdline = fopen("/proc/cpuinfo", "rb");
+	char *arg = 0;
+	size_t size = 0;
+
+	int num_proc = 0;
+	while(getdelim(&arg, &size, 0, cmdline) != -1)
+	{
+		arg[9] = 0;
+		if(strcmp(arg, "processor") == 0)
+			++num_proc;
+	}
+	free(arg);
+	fclose(cmdline);
+	return num_proc;
+}
 
 //fonction appelée à la fin d'un thread, via uc_link
 void thread_return()
