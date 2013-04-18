@@ -30,7 +30,7 @@ typedef struct Threads
 {
   int isInitialized;
   thread_t mainThread;
-  thread_t currentThread;
+  thread_t *currentThreads;
   TAILQ_HEAD(, thread_t_) list;
   TAILQ_HEAD(, thread_t_) list_sleeping;
   TAILQ_HEAD(, thread_t_) list_dead;
