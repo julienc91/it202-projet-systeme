@@ -120,17 +120,15 @@ void thread_init_function(void)
 		unsigned long i;
 		threadList.pthreads = calloc(n_cores-1, sizeof(pthread_t*));
 		threadList.currentThreads = calloc(n_cores, sizeof(thread_t));
+		
+		for(i = 0; i < n_cores; i++)
+		{
+			threadList.currentThreads[i]=NULL;
+		}
 
 		pthread_key_create(&id_thread, NULL);
 		pthread_setspecific(id_thread, (void*)((unsigned long) 0));
 		
-		for(i = 0; i < n_cores; i++)
-		{
-			//~ threadList.pthreads[i] = malloc(sizeof(pthread_t));
-			//~ pthread_create(threadList.pthreads[i], NULL, thread_pthread_handler, (void*)i+1);
-			threadList.currentThreads[i]=NULL;
-		}
-
 		// Code de base
 		threadList.isInitialized = TRUE;
 		TAILQ_INIT(&threadList.list);
@@ -257,16 +255,14 @@ extern int thread_yield(void)
 			}
 		   
 			TAILQ_REMOVE(&(threadList.list), thread, entries);
-			TAILQ_INSERT_TAIL(&(threadList.list), thread, entries);
-			//TODO ajouter à la liste des IN-USE
-
+			//~ TAILQ_INSERT_TAIL(&(threadList.list), thread, entries);
 	}
 	else if (!TAILQ_EMPTY(&threadList.list_sleeping))// si il n'y a plus que des threads endormis
 	{
 			thread = TAILQ_FIRST(&(threadList.list_sleeping));
 			thread->state = READY;
 			TAILQ_REMOVE(&(threadList.list_sleeping), thread, entries);
-			TAILQ_INSERT_TAIL(&(threadList.list), thread, entries);
+			//~ TAILQ_INSERT_TAIL(&(threadList.list), thread, entries);
 	}
 	else //si tous les threads sont morts ou endormis
 	{
@@ -328,7 +324,7 @@ extern int thread_join(thread_t thread, void **retval)
 				if (tmp != NULL)
 				{
 					tmp->state = SLEEPING;
-					TAILQ_REMOVE(&(threadList.list), tmp, entries);
+					//~ TAILQ_REMOVE(&(tehreadList.list), tmp, entries);
 					TAILQ_INSERT_TAIL(&(threadList.list_sleeping), tmp, entries);
 				}
 
@@ -348,7 +344,7 @@ extern int thread_join(thread_t thread, void **retval)
 			if (tmp != NULL)
 				{
 					tmp->state = SLEEPING;
-					TAILQ_REMOVE(&(threadList.list), tmp, entries);
+					//~ TAILQ_REMOVE(&(threadList.list), tmp, entries);
 					TAILQ_INSERT_TAIL(&(threadList.list_sleeping), tmp, entries);
 				}
 				thread_yield();
@@ -372,7 +368,7 @@ extern void thread_exit(void *retval)
 
 	//Terminaison du thread courant
 	(threadList.currentThreads[(unsigned long)pthread_getspecific(id_thread)])->state = DEAD;
-	TAILQ_REMOVE(&(threadList.list), threadList.currentThreads[(unsigned long)pthread_getspecific(id_thread)], entries);
+	//~ TAILQ_REMOVE(&(threadList.list), threadList.currentThreads[(unsigned long)pthread_getspecific(id_thread)], entries);
 	TAILQ_INSERT_TAIL(&(threadList.list_dead), threadList.currentThreads[(unsigned long)pthread_getspecific(id_thread)], entries);
 
 	thread_yield();
