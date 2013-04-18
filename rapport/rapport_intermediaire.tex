@@ -41,7 +41,7 @@ belowskip=2em,
 
 \lstdefinelanguage{tikzuml}{language=[LaTeX]TeX, classoffset=0, morekeywords={umlbasiccomponent, umlprovidedinterface, umlrequiredinterface, umldelegateconnector, umlassemblyconnector, umlVHVassemblyconnector, umlHVHassemblyconnector, umlnote, umlusecase, umlactor, umlinherit, umlassoc, umlVHextend, umlinclude, umlstateinitial, umlbasicstate, umltrans, umlstatefinal, umlVHtrans, umlHVtrans, umldatabase, umlmulti, umlobject, umlfpart, umlcreatecall, umlclass, umlvirt, umlunicompo, umlimport, umlaggreg}, classoffset=1, morekeywords={umlcomponent, umlsystem, umlstate, umlseqdiag, umlcall, umlcallself, umlfragment, umlpackage}, classoffset=0,  sensitive=true, morecomment=[l]{\%}}
 
-\geometry{margin=2.5cm}
+\geometry{margin=2.6cm}
 \geometry{headheight=15pt}
 
 \usepackage{fancyhdr}
@@ -167,26 +167,36 @@ La création d'un thread se résume en l'allocation dynamique d'une variable \te
 
 \subsubsection*{Passage de main}
 
+Le passage de main, à l'aide de la fonction \texttt{thread\_yield}, consiste simplement à placer le thread courant en fin de liste et d'exécuter le thread se trouvant en début de liste. Dans le cas où cette liste serait vide, il faut réveiller un thread endormi pour l'exécuter. Cette fonction se charge d'effectuer le changement d contexte, ce qui lance l'exécution de la fonction associée au thread.
+
+\subsubsection*{Attente de thread}
+
+L'attente d'un thread consiste en fait à attendre qu'il passe à l'état \textit{mort}. Si jamais le thread concerné n'est pas le thread courant, le remplacement est effectué, suivi par le changement de contexte, afin de reprendre son exécution. S'il est endormi, il faut alors le réveiller, le placer dans la liste des threads prêts, et l'exécuter. La valeur de retour du thread est récupérée directement depuis l'attribut \texttt{retval} de la structure \texttt{thread\_t}.
+
+\subsubsection*{Terminer un thread}
+
+Lorsque l'utilisateur demande à terminer un thread, il est simplement indiqué comme mort et placé dans la liste des threads morts. Il ne reste alors qu'à demander le changement de main.
+
+
 \section{L'avancement actuel du projet}
 
-\subsubsection{Implémentation}
+\subsection{Implémentation}
 
 L'ensemble des fonctions figurant dans le fichier \textit{thread.h} a été implémenté. Les tests pré-existants ont permis de véfifier au fur et à mesure du développement que le code en cours d'écriture était en adéquation avec les prérequis.
 
-\subsection{Tests}
+\subsection{Tests prédéfinis}
 
 
-A l'heure actuelle, la totalité des tests ayant été définis au préalable passe avec succès. Mieux encore: la bibliothèque créée pour le projet dépasse la bibliothèque \textit{pthread} sur le test de calcul du $n^{ieme}$ élément de la suite de Fibonacci! En effet, le calcul s'effectue sans problème jusqu'au $22^{ieme}$ terme, alors que le programme s'arrête dès le $13^{ieme}$ terme en utilisant \textit{pthread}.\\
-%tests
+A l'heure actuelle, la totalité des tests ayant été définis au préalable passe avec succès. Mieux encore: la bibliothèque créée pour le projet dépasse la bibliothèque \textit{pthread} sur le test de calcul du $n^{ieme}$ élément de la suite de Fibonacci! En effet, le calcul s'effectue sans problème jusqu'au $22^{ieme}$ terme, alors que le programme s'arrête dès le $13^{ieme}$ terme en utilisant \textit{pthread}.
 
+\subsection{Tests complémentaires}
 Des tests non prévus par le sujet ont également été testés. Ces tests ont été choisis pour le grand nombre de threads qu'ils créent.
 
-Le premier est ``le voyageur de commerce'', qui consiste à trouver le plus court chemin passant par un certain nombre de points. Ce programme crée autant de processus qu'il y a de points. Nous avons pu l'exécuter avec $nb$ villes en utilisant nos threads et $nb2$ en utilisant \textit{pthread}.
+Le premier est ``le voyageur de commerce'', qui consiste à trouver le plus court chemin passant par un certain nombre de points. Ce programme crée autant de processus qu'il y a de points. %Nous avons pu l'exécuter avec $nb$ villes en utilisant nos threads et $nb2$ en utilisant \textit{pthread}.
 
+\subsection{Valgrind}
 
-
-%valgrind
-Nous les avons également lancé avec valgrind et aucun ne fait de fuite mémoire.
+Les tests précédemment évoqués ont également été lancés sous la supervisation du logiciel \textit{Valgrind}. Comme attendu, la bibliothèque de thread créée n'est source d'aucune fuite mémoire.
 
 \section{Nos objectifs pour la suite du projet}
 
