@@ -43,7 +43,8 @@ void thread_return();
 void stock_return(void * funcarg, void* (*func)());
 void threads_destroy();
 void thread_init_function(void);
-int get_cores(void);
+unsigned int get_cores(void);
+unsigned long get_id_thread(void);
 
 
 
