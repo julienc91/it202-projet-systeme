@@ -175,7 +175,7 @@ L'attente d'un thread consiste en fait à attendre qu'il passe à l'état \texti
 
 \subsubsection*{Terminer un thread}
 
-Lorsque l'utilisateur demande à terminer un thread, il est simplement indiqué comme mort et placé dans la liste des threads morts. Il ne reste alors qu'à demander le changement de main.
+Lorsque l'utilisateur demande à terminer un thread, il est simplement indiqué comme mort et placé dans la liste des threads morts. Il ne reste alors qu'à demander à passer la main.
 
 
 \section{L'avancement actuel du projet}
@@ -187,14 +187,14 @@ L'ensemble des fonctions figurant dans le fichier \textit{thread.h} a été impl
 \subsection{Tests prédéfinis}
 
 
-A l'heure actuelle, la totalité des tests ayant été définis au préalable passent avec succès. Mieux encore: la bibliothèque créée pour le projet dépasse la bibliothèque \textit{pthread} sur le test de calcul du $n$\up{ème} élément de la suite de Fibonacci! En effet, le calcul s'effectue sans problème jusqu'au $22$\up{ème} terme, alors que le programme s'arrête dès le $13$\up{ème} terme en utilisant \textit{pthread}.
+A l'heure actuelle, la totalité des tests ayant été définis au préalable passent avec succès. Mieux encore: la bibliothèque créée pour le projet dépasse la bibliothèque \textit{pthread} sur le test de calcul du $n$\up{ième} élément de la suite de Fibonacci! En effet, le calcul s'effectue sans problème jusqu'au $22$\up{ième} terme; alors qu'en utilisant \textit{pthread}, le temps d'exécution du programme s'envole dès le $13$\up{ième} terme .
 
 \subsection{Tests complémentaires}
 Des tests non prévus par le sujet ont également été faits. Ces tests ont été choisis pour le grand nombre de threads qu'ils créent.
 
 Le premier est ``le voyageur de commerce'', qui consiste à trouver le plus court chemin passant par un certain nombre de points. Ce programme crée autant de processus qu'il y a de points. %Nous avons pu l'exécuter avec $nb$ villes en utilisant nos threads et $nb2$ en utilisant \textit{pthread}.
 
-Le second test calcule la somme des éléments d'un tableau. Chaque thread calcul la sous-somme sur une partie du tableau. La taille du tableau étant fixée, le nombre de thread à utilisé est passé en paramètre (et doit être une puissance de deux). Avec notre implémentation des threads, ce nombre peut monter jusqu'à 1024 threads alors qu'avec des \textit{pthreads}, la limite est de 256.
+Le second test calcule la somme des éléments d'un tableau. Chaque thread calcule  la somme partielle sur une partie du tableau. La taille du tableau étant fixée, le nombre de threads à utiliser est passé en paramètre (et doit être une puissance de deux). Avec notre implémentation des threads, ce nombre peut monter jusqu'à 1024 threads alors qu'en utilisant la bibliothèque \textit{pthreads}, la limite tombe à 256.
 
 \subsection{Valgrind}
 
