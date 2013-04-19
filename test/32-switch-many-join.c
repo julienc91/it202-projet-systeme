@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <sys/time.h>
 #include "thread.h"
+#include "../test/pthread_test.h"
 
 /* test de plein de switch pendant que N-1 threads sont bloqués dans join
  *

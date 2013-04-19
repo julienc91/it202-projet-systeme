@@ -1,6 +1,6 @@
 CC=@gcc
-CFLAGS=-Wall -Wextra -g -Wno-unused-parameter -Wno-sign-compare -Isrc -Itest
-LDFLAGS=-lm
+CFLAGS=-Wall -Wextra -g -Wno-unused-parameter -Wno-sign-compare -Isrc -Itest 
+LDFLAGS=-lm -lpthread
 
 SOURCES = $(wildcard test/*.c)
 OBJECTS0= $(SOURCES:.c=)

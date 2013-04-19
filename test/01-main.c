@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <assert.h>
 #include "thread.h"
+#include "../test/pthread_test.h"
 
 /* test du thread_self et yield du main seul.
  *
@@ -22,7 +23,7 @@ int main()
     assert(!err);
   }
 
-  printf("le main est %p\n", thread_self());
+  printf("le main est %p\n", (void *)thread_self());
 
   return 0;
 }
