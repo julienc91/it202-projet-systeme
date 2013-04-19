@@ -119,7 +119,7 @@ Ses attributs ont chacun leur utilité:
 
 Le type \texttt{Threads} a été mis en place afin de gérer différents threads au cours de l'exécution d'un programme. Il s'agit en fait d'une file contenant les différents threads créés par le programmeur, ce qui permet de passer aisément d'un thread à un autre.
 
-Comme évoqué précédemment, c'est l'implémentation de \textit{Queue BSD} qui est utilisée ici. Cette structure de file assure le passage d'un thread vers le thread suivant ou précédent en temps constant (situtation d'un changement de contexte \textit{``naturel''}). La définition du type \texttt{Threads} est donnée en figure \ref{threadst}.
+Comme évoqué précédemment, c'est l'implémentation de \textit{Queue BSD} qui est utilisée ici. Cette structure de file assure le passage d'un thread vers le thread suivant ou précédent en temps constant (situation d'un changement de contexte \textit{``naturel''}). La définition du type \texttt{Threads} est donnée en figure \ref{threadst}.
 
 \begin{figure}[H]
 \begin{lstlisting}
@@ -167,7 +167,7 @@ La création d'un thread se résume en l'allocation dynamique d'une variable \te
 
 \subsubsection*{Passage de main}
 
-Le passage de main, à l'aide de la fonction \texttt{thread\_yield}, consiste simplement à placer le thread courant en fin de liste et d'exécuter le thread se trouvant en début de liste. Dans le cas où cette liste serait vide, il faut réveiller un thread endormi pour l'exécuter. Cette fonction se charge d'effectuer le changement d contexte, ce qui lance l'exécution de la fonction associée au thread.
+Le passage de main, à l'aide de la fonction \texttt{thread\_yield}, consiste simplement à placer le thread courant en fin de liste et d'exécuter le thread se trouvant en début de liste. Dans le cas où cette liste serait vide, il faut réveiller un thread endormi pour l'exécuter. Cette fonction se charge d'effectuer le changement de contexte, ce qui lance l'exécution de la fonction associée au thread.
 
 \subsubsection*{Attente de thread}
 
@@ -182,15 +182,15 @@ Lorsque l'utilisateur demande à terminer un thread, il est simplement indiqué 
 
 \subsection{Implémentation}
 
-L'ensemble des fonctions figurant dans le fichier \textit{thread.h} a été implémenté. Les tests pré-existants ont permis de véfifier au fur et à mesure du développement que le code en cours d'écriture était en adéquation avec les prérequis.
+L'ensemble des fonctions figurant dans le fichier \textit{thread.h} a été implémenté. Les tests pré-existants ont permis de vérifier au fur et à mesure du développement que le code en cours d'écriture était en adéquation avec les prérequis.
 
 \subsection{Tests prédéfinis}
 
 
-A l'heure actuelle, la totalité des tests ayant été définis au préalable passe avec succès. Mieux encore: la bibliothèque créée pour le projet dépasse la bibliothèque \textit{pthread} sur le test de calcul du $n^{ieme}$ élément de la suite de Fibonacci! En effet, le calcul s'effectue sans problème jusqu'au $22^{ieme}$ terme, alors que le programme s'arrête dès le $13^{ieme}$ terme en utilisant \textit{pthread}.
+A l'heure actuelle, la totalité des tests ayant été définis au préalable passent avec succès. Mieux encore: la bibliothèque créée pour le projet dépasse la bibliothèque \textit{pthread} sur le test de calcul du $n$\up{ème} élément de la suite de Fibonacci! En effet, le calcul s'effectue sans problème jusqu'au $22$\up{ème} terme, alors que le programme s'arrête dès le $13$\up{ème} terme en utilisant \textit{pthread}.
 
 \subsection{Tests complémentaires}
-Des tests non prévus par le sujet ont également été testés. Ces tests ont été choisis pour le grand nombre de threads qu'ils créent.
+Des tests non prévus par le sujet ont également été faits. Ces tests ont été choisis pour le grand nombre de threads qu'ils créent.
 
 Le premier est ``le voyageur de commerce'', qui consiste à trouver le plus court chemin passant par un certain nombre de points. Ce programme crée autant de processus qu'il y a de points. %Nous avons pu l'exécuter avec $nb$ villes en utilisant nos threads et $nb2$ en utilisant \textit{pthread}.
 
