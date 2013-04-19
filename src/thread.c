@@ -11,7 +11,7 @@
 #include "queue.h"
 #include "thread.h"
 
-#define DEBUG(string) printf("This is line %d of file %s (function : %s)\n",  __LINE__, __FILE__,string );
+#define DEBUG(string) printf("Function : %s , line %d of file %s (\n", string, __LINE__, __FILE__);
 
 static Threads threadList = {FALSE};
 static ucontext_t return_t;
@@ -95,8 +95,17 @@ void stock_return(void * funcarg, void* (*func)())
 void threads_destroy(void)
 {
 	DEBUG ("threads_destroy")
+	pthread_mutex_lock(&lock);
+	threadList.currentThreads[0]->state = DEAD;
+	TAILQ_INSERT_TAIL(&(threadList.list_dead), threadList.currentThreads[0], entries);
+	pthread_mutex_unlock(&lock);
+	
+	DEBUG ("Main marked as dead")
+
 	thread_t item, tmp_item;
 	free(return_t.uc_stack.ss_sp);
+	
+	DEBUG ("After free(return_t.uc_stack.ss_sp)")
 	
 	unsigned int i;
 	for(i = 0; i < nb_cores-1; i++)
@@ -104,6 +113,9 @@ void threads_destroy(void)
 		pthread_join(*(threadList.pthreads[i]), NULL);
 		free(threadList.pthreads[i]);
 	}
+	
+	free(threadList.pthreads);
+	free(threadList.currentThreads);
 
 	for (item = TAILQ_FIRST(&(threadList.list)); item != NULL; item = tmp_item)
 	{
@@ -140,9 +152,8 @@ void threads_destroy(void)
 		free(item->context.uc_stack.ss_sp);
 		free(item);
 	}
-
-	free(threadList.pthreads);
-	free(threadList.currentThreads);
+	
+	DEBUG ("(fin de )threads_destroy")
 }
 
 void thread_init_function(void)
@@ -299,17 +310,17 @@ extern int thread_yield(void)
 	{
 			thread = TAILQ_FIRST(&(threadList.list));
 			
-			//si le premier thread est le thread courant, on prend le suivant
-			if ((thread == tmp) && (TAILQ_NEXT(thread, entries) != NULL))
-			{
-					thread = TAILQ_NEXT(thread, entries);
-			}
-			//si le thread courant est le seul thread prêt, on continue l'exécution
-			else if ((thread == tmp) && (TAILQ_NEXT(thread, entries) == NULL))
-			{
-					pthread_mutex_unlock(&lock);
-					return 0;
-			}
+			//~ //si le premier thread est le thread courant, on prend le suivant
+			//~ if ((thread == tmp) && (TAILQ_NEXT(thread, entries) != NULL))
+			//~ {
+					//~ thread = TAILQ_NEXT(thread, entries);
+			//~ }
+			//~ //si le thread courant est le seul thread prêt, on continue l'exécution
+			//~ else if ((thread == tmp) && (TAILQ_NEXT(thread, entries) == NULL))
+			//~ {
+					//~ pthread_mutex_unlock(&lock);
+					//~ return 0;
+			//~ }
 		   
 			TAILQ_REMOVE(&(threadList.list), thread, entries);
 			pthread_mutex_unlock(&lock);
@@ -341,18 +352,22 @@ extern int thread_yield(void)
 			}
 			pthread_mutex_unlock(&lock);
 
-			if(yield_again)
-			{
-				//~ usleep(100);
-				thread_yield();
-			}
 			if(tmp == threadList.mainThread)
 			{
+				DEBUG("fin du main")
 				pthread_mutex_lock(&lock);
 				tmp->state = DEAD;
 				TAILQ_INSERT_TAIL(&(threadList.list_dead), threadList.currentThreads[get_id_thread()], entries);
 				pthread_mutex_unlock(&lock);
 			}
+
+			if(yield_again)
+			{
+				//~ DEBUG("yield_again")
+				usleep(100);
+				thread_yield();
+			}
+
 			return 0;
 	}
 

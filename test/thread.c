@@ -11,7 +11,7 @@
 #include "queue.h"
 #include "thread.h"
 
-#define DEBUG printf("This is line %d of file %s \n",  __LINE__, __FILE__);
+#define DEBUG(string) printf("Function : %s , line %d of file %s (\n", string, __LINE__, __FILE__);
 
 static Threads threadList = {FALSE};
 static ucontext_t return_t;
@@ -58,8 +58,7 @@ long get_id_thread(void)
 void *thread_pthread_handler(void * v)
 {
 	pthread_setspecific(id_thread, v);	
-	printf("handler\n");
-	DEBUG
+	DEBUG ("handler")
 	thread_yield();
 	return v;
 }
@@ -84,16 +83,39 @@ void stock_return(void * funcarg, void* (*func)())
 {
 	if(get_id_thread() != -1)
 	{
-	threadList.currentThreads[get_id_thread()]->retval = func(funcarg);
+		threadList.currentThreads[get_id_thread()]->retval = func(funcarg);
+	}
+	else
+	{
+		DEBUG("stock_return")
 	}
 }
 
 //fonction appelée à la terminaison du programme pour libérer la mémoire
 void threads_destroy(void)
 {
-	DEBUG
+	DEBUG ("threads_destroy")
+	pthread_mutex_lock(&lock);
+	threadList.currentThreads[0]->state = DEAD;
+	TAILQ_INSERT_TAIL(&(threadList.list_dead), threadList.currentThreads[0], entries);
+	pthread_mutex_unlock(&lock);
+	
+	DEBUG ("Main marked as dead")
+
 	thread_t item, tmp_item;
 	free(return_t.uc_stack.ss_sp);
+	
+	DEBUG ("After free(return_t.uc_stack.ss_sp)")
+	
+	unsigned int i;
+	for(i = 0; i < nb_cores-1; i++)
+	{
+		pthread_join(*(threadList.pthreads[i]), NULL);
+		free(threadList.pthreads[i]);
+	}
+	
+	free(threadList.pthreads);
+	free(threadList.currentThreads);
 
 	for (item = TAILQ_FIRST(&(threadList.list)); item != NULL; item = tmp_item)
 	{
@@ -130,16 +152,8 @@ void threads_destroy(void)
 		free(item->context.uc_stack.ss_sp);
 		free(item);
 	}
-
-	unsigned int i;
-	for(i = 0; i < nb_cores-1; i++)
-	{
-		pthread_join(*(threadList.pthreads[i]), NULL);
-		free(threadList.pthreads[i]);
-	}
-
-	free(threadList.pthreads);
-	free(threadList.currentThreads);
+	
+	DEBUG ("(fin de )threads_destroy")
 }
 
 void thread_init_function(void)
@@ -165,7 +179,7 @@ void thread_init_function(void)
 		TAILQ_INIT(&threadList.list_sleeping);
 		TAILQ_INIT(&threadList.list_dead);
 
-		//~ atexit(threads_destroy);
+		atexit(threads_destroy);
 
 		// il faut récupérer le contexte courant et le mettre dans threadList.mainThread, ainsi que l'ajouter
 		thread_t thread = calloc(1, sizeof(struct thread_t_));
@@ -207,11 +221,10 @@ void thread_init_function(void)
 			
 			for(i = 0; i < nb_cores-1; i++)
 			{
-				DEBUG
+				DEBUG("pthread_init_function")
 				threadList.pthreads[i] = malloc(sizeof(pthread_t));
-				int test = pthread_create(threadList.pthreads[i], NULL, thread_pthread_handler, (void*)i+2);
-				//~ sleep(1);
-				printf("test: %d\n", test);
+				pthread_create(threadList.pthreads[i], NULL, thread_pthread_handler, (void*)i+2);
+				usleep(100);
 			}
 		}
 	}
@@ -286,6 +299,10 @@ extern int thread_yield(void)
 	{
 		tmp = threadList.currentThreads[get_id_thread()];
 	}
+	else
+	{
+		DEBUG("thread_yield")
+	}
 	 //Recherche du premier thread prêt
  	pthread_mutex_lock(&lock);
 
@@ -293,17 +310,17 @@ extern int thread_yield(void)
 	{
 			thread = TAILQ_FIRST(&(threadList.list));
 			
-			//si le premier thread est le thread courant, on prend le suivant
-			if ((thread == tmp) && (TAILQ_NEXT(thread, entries) != NULL))
-			{
-					thread = TAILQ_NEXT(thread, entries);
-			}
-			//si le thread courant est le seul thread prêt, on continue l'exécution
-			else if ((thread == tmp) && (TAILQ_NEXT(thread, entries) == NULL))
-			{
-					pthread_mutex_unlock(&lock);
-					return 0;
-			}
+			//~ //si le premier thread est le thread courant, on prend le suivant
+			//~ if ((thread == tmp) && (TAILQ_NEXT(thread, entries) != NULL))
+			//~ {
+					//~ thread = TAILQ_NEXT(thread, entries);
+			//~ }
+			//~ //si le thread courant est le seul thread prêt, on continue l'exécution
+			//~ else if ((thread == tmp) && (TAILQ_NEXT(thread, entries) == NULL))
+			//~ {
+					//~ pthread_mutex_unlock(&lock);
+					//~ return 0;
+			//~ }
 		   
 			TAILQ_REMOVE(&(threadList.list), thread, entries);
 			pthread_mutex_unlock(&lock);
@@ -335,11 +352,22 @@ extern int thread_yield(void)
 			}
 			pthread_mutex_unlock(&lock);
 
+			if(tmp == threadList.mainThread)
+			{
+				DEBUG("fin du main")
+				pthread_mutex_lock(&lock);
+				tmp->state = DEAD;
+				TAILQ_INSERT_TAIL(&(threadList.list_dead), threadList.currentThreads[get_id_thread()], entries);
+				pthread_mutex_unlock(&lock);
+			}
+
 			if(yield_again)
 			{
-				//~ usleep(100);
+				//~ DEBUG("yield_again")
+				usleep(100);
 				thread_yield();
 			}
+
 			return 0;
 	}
 
@@ -348,7 +376,7 @@ extern int thread_yield(void)
 	{
 	threadList.currentThreads[get_id_thread()] = thread;
 	}
-
+	
 	//Changement de contexte
 	if(tmp == NULL)
 	{
@@ -374,8 +402,7 @@ extern int thread_join(thread_t thread, void **retval)
 
 	if (get_id_thread() == -1)
 	{
-	printf("thread_join\n");
-	DEBUG
+	DEBUG ("thread_join")
 	return 0;
 	}
 
@@ -438,19 +465,26 @@ extern int thread_join(thread_t thread, void **retval)
 extern void thread_exit(void *retval)
 {
 	thread_init_function();
-	//Affectation de la valeur de retour du thread courant à retval
-	threadList.currentThreads[get_id_thread()]->retval = retval;
-
-	//Terminaison du thread courant
-	pthread_mutex_lock(&lock);
-	(threadList.currentThreads[get_id_thread()])->state = DEAD;
-	//~ TAILQ_REMOVE(&(threadList.list), threadList.currentThreads[get_id_thread()], entries);
-	TAILQ_INSERT_TAIL(&(threadList.list_dead), threadList.currentThreads[get_id_thread()], entries);
-	pthread_mutex_unlock(&lock);
-
+	if(get_id_thread() != -1)
+	{
+		//Affectation de la valeur de retour du thread courant à retval
+		threadList.currentThreads[get_id_thread()]->retval = retval;
+		
+		//Terminaison du thread courant
+		pthread_mutex_lock(&lock);
+		(threadList.currentThreads[get_id_thread()])->state = DEAD;
+		//~ TAILQ_REMOVE(&(threadList.list), threadList.currentThreads[get_id_thread()], entries);
+		TAILQ_INSERT_TAIL(&(threadList.list_dead), threadList.currentThreads[get_id_thread()], entries);
+		pthread_mutex_unlock(&lock);
+	}
+	else
+	{
+		DEBUG("thread_exit")
+	}
 	thread_yield();
 
 	//Cette fonction ne doit pas terminer
 	label:
+		DEBUG("thread_exit, goto label")
 		goto label;
 }
