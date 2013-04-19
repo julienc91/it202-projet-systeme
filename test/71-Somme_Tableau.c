@@ -35,12 +35,19 @@ int main(int argc, char * argv[]){
     }
 
     N = atoi(argv[1]);
+    printf("N = %d\n", N);
     thread_t tid[N];
 	int id[N];
+    i =N;
 
+    while(i != 1 && i != 2){
+        i = i/2;
+    }
 
-    if(N%2!=0){
-        printf("donner un nombre de threads pair");
+    //~printf("i = %d\n", i);
+
+    if(i != 2){
+        printf("donner un nombre de threads de la forme 2^n");
         return EXIT_FAILURE;
     }
 
@@ -65,7 +72,7 @@ int main(int argc, char * argv[]){
 		thread_join(tid[i], &pt);
 	}
 
-    printf("Total attendu:1048576\n", MAX_THREAD);
+    printf("Total attendu:1048576\n");
     printf("Total des éléments du tableau: %d\n", res);
     return EXIT_SUCCESS;
 }
