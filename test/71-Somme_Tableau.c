@@ -12,8 +12,8 @@ int res;
 int N;
 
 
-void * sum_init(void * id){
-    int id_self = (int )id;
+void *sum_init(void *id){
+  int id_self = (size_t) id;
     int i;
 
     for(i = 0; i < MAX_THREAD/N; i++){
@@ -37,7 +37,7 @@ int main(int argc, char * argv[]){
     N = atoi(argv[1]);
     printf("N = %d\n", N);
     thread_t tid[N];
-	int id[N];
+    //int id[N];
     i =N;
 
     while(i != 1 && i != 2){
@@ -63,8 +63,8 @@ int main(int argc, char * argv[]){
 
 
     for(i=0; i<N ; i++){
-        tid[i] = i;
-        thread_create(&tid[i], sum_init, (void *) i);
+      tid[i] = (void *)(size_t)i;
+      thread_create(&tid[i], sum_init, (void *)(size_t)i);
     }
 
     void * pt;
