@@ -194,6 +194,8 @@ Des tests non prévus par le sujet ont également été faits. Ces tests ont ét
 
 Le premier est ``le voyageur de commerce'', qui consiste à trouver le plus court chemin passant par un certain nombre de points. Ce programme crée autant de processus qu'il y a de points. %Nous avons pu l'exécuter avec $nb$ villes en utilisant nos threads et $nb2$ en utilisant \textit{pthread}.
 
+Le second test calcule la somme des éléments d'un tableau. Chaque thread calcul la sous-somme sur une partie du tableau. La taille du tableau étant fixée, le nombre de thread à utilisé est passé en paramètre (et doit être une puissance de deux). Avec notre implémentation des threads, ce nombre peut monter jusqu'à 1024 threads alors qu'avec des \textit{pthreads}, la limite est de 256.
+
 \subsection{Valgrind}
 
 Les tests précédemment évoqués ont également été lancés sous la supervisation du logiciel \textit{Valgrind}. Comme attendu, la bibliothèque de thread créée n'est source d'aucune fuite mémoire.
