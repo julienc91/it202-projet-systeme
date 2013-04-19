@@ -127,6 +127,10 @@ void thread_init_function(void)
 			return;
 		}
 
+		#ifdef DEBUG_MODE
+		thread->id = 0;
+		#endif
+
 		thread->state = READY;
 		thread->retval = NULL;
 		thread->default_priority = DEFAULT_PRIORITY;
@@ -164,7 +168,6 @@ extern thread_t thread_self(void)
 extern int thread_create(thread_t *newthread, void *(*func)(void *), void *funcarg)
 {
 	thread_init_function();
-
 	//Allocation
 	*newthread = malloc(sizeof(struct thread_t_));
 	if(*newthread == NULL)
@@ -190,6 +193,11 @@ extern int thread_create(thread_t *newthread, void *(*func)(void *), void *funca
 	makecontext(&((*newthread)->context), (void (*)(void))*stock_return, 2, funcarg, (void (*)(void))func);
 
 	//Initialisation des attributs
+	#ifdef DEBUG_MODE
+	static int id = 1;
+	(*newthread)->id = id++;
+	#endif
+
 	(*newthread)->state = READY;
 	(*newthread)->retval = NULL;
 	(*newthread)->default_priority = DEFAULT_PRIORITY;
@@ -223,7 +231,7 @@ extern int thread_yield(void)
 		      return 0;
 		    }
 
-		    if(thread->current_priority <= -threadList.max_priority) {
+		    if(thread->current_priority <= thread->default_priority-threadList.max_priority) {
 		      thread->current_priority = thread->default_priority;
 		    }
 		    else if(thread->current_priority <= 0) {
@@ -259,7 +267,9 @@ extern int thread_yield(void)
 		//Màj du currentThread dans la threadList
 		threadList.currentThread = thread;
 		
-		printf("Using thread %p with priority: %d/%d\n", thread, thread->current_priority, thread->default_priority);
+		#ifdef DEBUG_MODE
+		printf("Using thread %d with priority: %d/%d\n", thread->id, thread->current_priority, thread->default_priority);
+		#endif
 		
 		//Changement de contexte
 		swapcontext(&(tmp->context), &(threadList.currentThread->context));

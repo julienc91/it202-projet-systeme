@@ -5,13 +5,11 @@
 
 #define NB 2
 
-static void * thfunc(void* k) {
-  int i = (int) k;
+void * thfunc(void* k) {
   while(1) {
-    i++;
     thread_yield();
   }
-  return (void*) i;
+  return (void*) k;
 }
 
 int main(int argc, char **argv) {
@@ -19,7 +17,7 @@ int main(int argc, char **argv) {
   thread_t *ths = malloc(NB*sizeof(thread_t));
   int i;
   for(i=0; i<NB; i++) {
-    thread_create(&ths[i], thfunc, NULL);
+    thread_create(&ths[i], thfunc, (void*)i);
     set_thread_priority(ths[i], rand()%5+1);
   }
   debug_priority();

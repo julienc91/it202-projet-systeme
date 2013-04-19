@@ -13,6 +13,9 @@ typedef enum {READY, SLEEPING, DEAD} STATE;
 
 typedef struct thread_t_
 {
+  #ifdef DEBUG_MODE
+  int id;
+  #endif
   /* state of the thread */
   STATE state;
   /* context of the thread*/
