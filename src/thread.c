@@ -14,6 +14,25 @@
 static Threads threadList ;
 static ucontext_t return_t;
 
+void debug_priority() {
+  thread_t item, tmp_item;
+  for (item = TAILQ_FIRST(&(threadList.list)); item != NULL; item = tmp_item)
+    {
+      tmp_item = TAILQ_NEXT(item, entries);
+      printf("(%d - %d) ", item->default_priority, item->current_priority);
+    }
+  printf("\n");
+}
+
+int set_thread_priority(thread_t thread, int priority) {
+  if(priority <= 0)
+    return 0;
+  thread->default_priority = priority;
+  if(threadList.max_priority < priority)
+    threadList.max_priority = priority;
+  return 1;
+}
+
 int get_cores(void)
 {
 	FILE *cmdline = fopen("/proc/cpuinfo", "rb");
@@ -110,9 +129,12 @@ void thread_init_function(void)
 
 		thread->state = READY;
 		thread->retval = NULL;
+		thread->default_priority = DEFAULT_PRIORITY;
+		thread->current_priority = DEFAULT_PRIORITY;
 
 		getcontext(&(thread->context));
 
+		threadList.max_priority = 1;
 		threadList.mainThread = thread;
 		threadList.currentThread = thread;
 		TAILQ_INSERT_HEAD(&(threadList.list), thread, entries);
@@ -167,10 +189,11 @@ extern int thread_create(thread_t *newthread, void *(*func)(void *), void *funca
 	((*newthread)->context).uc_link = &return_t;
 	makecontext(&((*newthread)->context), (void (*)(void))*stock_return, 2, funcarg, (void (*)(void))func);
 
-
 	//Initialisation des attributs
 	(*newthread)->state = READY;
 	(*newthread)->retval = NULL;
+	(*newthread)->default_priority = DEFAULT_PRIORITY;
+	(*newthread)->current_priority = DEFAULT_PRIORITY;
 
 	//Ajout en tête de la pile des threads
 	TAILQ_INSERT_TAIL(&(threadList.list), (*newthread), entries);
@@ -189,25 +212,35 @@ extern int thread_yield(void)
 
 	thread_t tmp = threadList.currentThread;
 	thread_t thread;
+	tmp->current_priority--;
 
 		//Recherche du premier thread prêt
 		if(!TAILQ_EMPTY(&threadList.list)) //si il y a des éléments dans la liste des threads prêts
 		{
-			thread = TAILQ_FIRST(&(threadList.list));
-			/*
-			//si le premier thread est le thread courant, on prend le suivant
-			if ((thread == tmp) && (TAILQ_NEXT(thread, entries) != NULL))
-			{
-				thread = TAILQ_NEXT(thread, entries);
-			}*/
-			//si le thread courant est le seul thread prêt, on continue l'exécution
-			if ((thread == tmp) && (TAILQ_NEXT(thread, entries) == NULL))
-			{
-				return 0;
-			}
-			
-			TAILQ_REMOVE(&(threadList.list), thread, entries);
-			TAILQ_INSERT_TAIL(&(threadList.list), thread, entries);
+		  do {
+		    thread = TAILQ_FIRST(&(threadList.list));
+		    if ((thread == tmp) && (TAILQ_NEXT(thread, entries) == NULL)) {
+		      return 0;
+		    }
+
+		    if(thread->current_priority <= -threadList.max_priority) {
+		      thread->current_priority = thread->default_priority;
+		    }
+		    else if(thread->current_priority <= 0) {
+		      thread->current_priority--;
+		    }
+
+		    /*
+		    //si le premier thread est le thread courant, on prend le suivant
+		    if ((thread == tmp) && (TAILQ_NEXT(thread, entries) != NULL))
+		    {
+		    thread = TAILQ_NEXT(thread, entries);
+		    }*/
+		    //si le thread courant est le seul thread prêt, on continue l'exécution
+		    
+		    TAILQ_REMOVE(&(threadList.list), thread, entries);
+		    TAILQ_INSERT_TAIL(&(threadList.list), thread, entries);
+		  } while(thread->current_priority < 0);
 
 		}
 		else if (!TAILQ_EMPTY(&threadList.list_sleeping))// si il n'y a plus que des threads endormis
@@ -225,6 +258,8 @@ extern int thread_yield(void)
 
 		//Màj du currentThread dans la threadList
 		threadList.currentThread = thread;
+		
+		printf("Using thread %p with priority: %d/%d\n", thread, thread->current_priority, thread->default_priority);
 		
 		//Changement de contexte
 		swapcontext(&(tmp->context), &(threadList.currentThread->context));
