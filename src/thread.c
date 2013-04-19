@@ -129,6 +129,7 @@ void thread_init_function(void)
 
 		#ifdef DEBUG_MODE
 		thread->id = 0;
+		thread->nb_calls = 0;
 		#endif
 
 		thread->state = READY;
@@ -196,6 +197,7 @@ extern int thread_create(thread_t *newthread, void *(*func)(void *), void *funca
 	#ifdef DEBUG_MODE
 	static int id = 1;
 	(*newthread)->id = id++;
+	(*newthread)->nb_calls = 0;
 	#endif
 
 	(*newthread)->state = READY;
@@ -268,7 +270,8 @@ extern int thread_yield(void)
 		threadList.currentThread = thread;
 		
 		#ifdef DEBUG_MODE
-		printf("Using thread %d with priority: %d/%d\n", thread->id, thread->current_priority, thread->default_priority);
+		thread->nb_calls++;
+		printf("Using thread %d (time %d) with priority: %d/%d\n", thread->id, thread->nb_calls, thread->current_priority, thread->default_priority);
 		#endif
 		
 		//Changement de contexte

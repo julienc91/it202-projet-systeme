@@ -3,7 +3,7 @@
 #include <time.h>
 #include "thread.h"
 
-#define NB 2
+#define NB 5
 
 void * thfunc(void* k) {
   while(1) {

@@ -15,6 +15,7 @@ typedef struct thread_t_
 {
   #ifdef DEBUG_MODE
   int id;
+  int nb_calls;
   #endif
   /* state of the thread */
   STATE state;
