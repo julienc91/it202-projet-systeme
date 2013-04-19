@@ -83,11 +83,11 @@ Le projet de Système d'Exploitation consiste en la réalisation d'une biblioth�
 
 \section{Définition des structures de données}
 
-L'une des premières étapes aura été de définir les structures de données à adopter à partir des résultats attendus et de l'implémentation des tests. Cette première partie décriera de manière détaillée les structures choisies.
+L'une des premières étapes aura été de définir les structures de données à adopter à partir des résultats attendus et de l'implémentation des tests. Cette première partie décrira de manière détaillée les structures choisies.
 
 \subsection{Le type \texttt{thread\_t}}
 
-Le type \texttt{thread\_t} est en fait la base de notre implémentation: elle représente un thread en mémoire. Sa définition est donnée en figure \ref{threadt}.
+Le type \texttt{thread\_t} est en fait à la base de notre implémentation: cette structure représente un thread en mémoire. Sa définition est donnée en figure \ref{threadt}.
 
 \begin{figure}[H]
 \begin{lstlisting}
@@ -108,9 +108,9 @@ typedef struct thread_t_
 
 Ses attributs ont chacun leur utilité:
 \begin{itemize}
-  \item \texttt{state}: état du thread, à savoir prêt à l'exécution, endormi, ou mort;
-  \item \texttt{context}: contexte d'exécution du thread, géré à l'aide des fonctions de la librairie standard \texttt{getcontext}, \texttt{setcontext}, \texttt{makecontext} et \texttt{swapcontext}, déclarées dans \texttt{ucontext.h};
-  \item \texttt{retval}: pointeur vers la valeur de retour de la fonction exécutée dans le thread
+  \item \texttt{state}: état du thread, à savoir \emph{prêt à l'exécution}, \emph{endormi}, ou \emph{mort};
+  \item \texttt{context}: contexte d'exécution du thread, géré à l'aide des fonctions de la bibliothèque standard \texttt{getcontext}, \texttt{setcontext}, \texttt{makecontext} et \texttt{swapcontext}, déclarées dans \texttt{ucontext.h};
+  \item \texttt{retval}: pointeur vers la valeur de retour de la fonction exécutée dans le thread;
   \item \texttt{valgrind\_stackid}: permet à l'utilitaire \textit{Valgrind} de mieux gérer la détection de problèmes de mémoire dans les piles;
   \item \texttt{entries}: structure contenant des pointeurs vers les threads suivant et précédent. Il s'agit en fait d'une liste doublement chaînée utilisant l'implémentation de \textit{Queue BSD}\footnote{http://linux.die.net/include/sys/queue.h}.
 \end{itemize}
@@ -140,7 +140,7 @@ typedef struct Threads
 Le rôle de chaque attribut est le suivant:
 \begin{itemize}
   \item \texttt{is\_initialized}: booléen indiquant si la liste a déjà été initialisée par la création d'un premier thread ou non;
-  \item \texttt{main\_thread}: thread correspondant au contexte de base du programme (celui ayant été créé lors de l'initialisation);
+  \item \texttt{main\_thread}: thread correspondant au contexte principal du programme (celui ayant été créé lors de l'initialisation);
   \item \texttt{current\_thread}: thread en train d'être exécuté;
   \item \texttt{list}: liste des threads prêts à être exécutés;
   \item \texttt{list\_sleeping}: liste des threads endormis;
