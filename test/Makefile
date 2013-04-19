@@ -1,6 +1,6 @@
 CC=@gcc
 CFLAGS=-Wall -Wextra -g -Wno-unused-parameter -Wno-sign-compare
-LDFLAGS=
+LDFLAGS=-lpthread
 
 SOURCES = 01-main.c 02-switch.c 11-join.c 12-join-main.c 21-create-many.c 22-create-many-recursive.c 31-switch-many.c 32-switch-many-join.c 51-fibonacci.c
 OBJECTS = $(SOURCES:.c=)

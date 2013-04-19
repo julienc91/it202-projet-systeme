@@ -91,6 +91,7 @@ void stock_return(void * funcarg, void* (*func)())
 //fonction appelée à la terminaison du programme pour libérer la mémoire
 void threads_destroy(void)
 {
+	DEBUG
 	thread_t item, tmp_item;
 	free(return_t.uc_stack.ss_sp);
 
@@ -164,7 +165,7 @@ void thread_init_function(void)
 		TAILQ_INIT(&threadList.list_sleeping);
 		TAILQ_INIT(&threadList.list_dead);
 
-		atexit(threads_destroy);
+		//~ atexit(threads_destroy);
 
 		// il faut récupérer le contexte courant et le mettre dans threadList.mainThread, ainsi que l'ajouter
 		thread_t thread = calloc(1, sizeof(struct thread_t_));
@@ -188,7 +189,7 @@ void thread_init_function(void)
 
 			threadList.mainThread = thread;
 			threadList.currentThreads[0] = thread;
-			TAILQ_INSERT_HEAD(&(threadList.list), thread, entries);
+			//~ TAILQ_INSERT_HEAD(&(threadList.list), thread, entries);
 
 			getcontext(&return_t);
 			return_t.uc_stack.ss_size = STACK_SIZE;
@@ -206,8 +207,11 @@ void thread_init_function(void)
 			
 			for(i = 0; i < nb_cores-1; i++)
 			{
+				DEBUG
 				threadList.pthreads[i] = malloc(sizeof(pthread_t));
-				pthread_create(threadList.pthreads[i], NULL, thread_pthread_handler, (void*)i+2);
+				int test = pthread_create(threadList.pthreads[i], NULL, thread_pthread_handler, (void*)i+2);
+				//~ sleep(1);
+				printf("test: %d\n", test);
 			}
 		}
 	}
