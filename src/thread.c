@@ -16,9 +16,10 @@
 static Threads threadList = {FALSE};
 static ucontext_t return_t;
 static pthread_key_t id_thread;
-static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER; 
+static pthread_mutex_t lock;
 static unsigned int nb_cores;
 
+//fonction qui renvoie le nombre de coeur d'un ordinateur
 unsigned int get_cores(void)
 {
 	FILE *cmdline = fopen("/proc/cpuinfo", "rb");
@@ -41,6 +42,7 @@ unsigned int get_cores(void)
 	return num_proc;
 }
 
+//fonction qui renvoie l'identifiant spécifique du thread courant
 long get_id_thread(void)
 {
 	 long tmp; 
@@ -55,6 +57,7 @@ long get_id_thread(void)
 	return tmp;
 }
 
+//fonction appelée lors de la creation d'un thread noyau
 void *thread_pthread_handler(void * v)
 {
 	pthread_setspecific(id_thread, v);	
@@ -111,6 +114,9 @@ void threads_destroy(void)
 	for(i = 0; i < nb_cores-1; i++)
 	{
 		pthread_join(*(threadList.pthreads[i]), NULL);
+	}
+	for(i = 0; i < nb_cores-1; i++)
+	{
 		free(threadList.pthreads[i]);
 	}
 	
@@ -156,12 +162,14 @@ void threads_destroy(void)
 	DEBUG ("(fin de )threads_destroy")
 }
 
+//fonction d'initialisation, à n'appeler qu'une seule fois au premier appel
 void thread_init_function(void)
 {
 	if(!threadList.isInitialized)
 	{
 		// Code pour le multicoeur
 		nb_cores = get_cores();
+		pthread_mutex_init(&lock, NULL);
 		unsigned long i;
 		threadList.pthreads = calloc(nb_cores-1, sizeof(pthread_t*));
 		threadList.currentThreads = calloc(nb_cores, sizeof(thread_t));
@@ -198,7 +206,6 @@ void thread_init_function(void)
 		if(!threadList.isInitialized)
 		{
 			thread->valgrind_stackid = VALGRIND_STACK_REGISTER(thread->context.uc_stack.ss_sp, thread->context.uc_stack.ss_sp + thread->context.uc_stack.ss_size);
-
 			threadList.isInitialized = TRUE;
 
 			threadList.mainThread = thread;
