@@ -1,6 +1,11 @@
 CC=@gcc
-CFLAGS=-Wall -Wextra -g -Wno-unused-parameter -Wno-sign-compare -Isrc -Itest 
+CFLAGS=-Wall -Wextra -g -Wno-unused-parameter -Wno-sign-compare -Isrc -Itest
 LDFLAGS=-lm -lpthread
+
+PTHREAD ?= 0
+ifeq ($(PTHREAD), 1)
+	CFLAGS+=-DPTHREAD
+endif
 
 SOURCES = $(wildcard test/*.c)
 OBJECTS0= $(SOURCES:.c=)
@@ -9,6 +14,7 @@ OBJECTS = $(subst test,bin,$(OBJECTS0))
 
 all:	thread.o $(OBJECTS)
 	@echo " All done."
+
 
 thread.o:	bin/thread.o
 
