@@ -3,6 +3,8 @@ bin/01-main
 bin/02-switch
 bin/11-join
 bin/12-join-main
+bin/17-priority
+bin/18-priority-exit
 bin/21-create-many
 bin/22-create-many-recursive
 bin/31-switch-many

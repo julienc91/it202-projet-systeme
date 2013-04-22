@@ -155,6 +155,11 @@ void thread_init_function(void)
 
 		getcontext(&(thread->context));
 
+		thread->valgrind_stackid = VALGRIND_STACK_REGISTER((thread->context).uc_stack.ss_sp,
+								   (thread->context).uc_stack.ss_sp +
+								   (thread->context).uc_stack.ss_size);
+
+
 		threadList.max_priority = 1;
 		threadList.mainThread = thread;
 		threadList.currentThread = thread;
@@ -164,6 +169,7 @@ void thread_init_function(void)
 		getcontext(&return_t);
 		return_t.uc_stack.ss_size = STACK_SIZE;
 		return_t.uc_stack.ss_sp = malloc(STACK_SIZE);
+
 		if(return_t.uc_stack.ss_sp == NULL)
 		{
 			perror("malloc");
@@ -204,7 +210,9 @@ extern int thread_create(thread_t *newthread, void *(*func)(void *), void *funca
 		return -1;
 	}
 
-	(*newthread)->valgrind_stackid = VALGRIND_STACK_REGISTER(((*newthread)->context).uc_stack.ss_sp,((*newthread)->context).uc_stack.ss_sp + ((*newthread)->context).uc_stack.ss_size);
+	(*newthread)->valgrind_stackid = VALGRIND_STACK_REGISTER(((*newthread)->context).uc_stack.ss_sp,
+								 ((*newthread)->context).uc_stack.ss_sp + 
+								 ((*newthread)->context).uc_stack.ss_size);
 
 	((*newthread)->context).uc_link = &return_t;
 	makecontext(&((*newthread)->context), (void (*)(void))*stock_return, 2, funcarg, (void (*)(void))func);

@@ -54,6 +54,10 @@ check:	thread.o $(OBJECTS)
 	@bin/17-priority
 	@echo ""
 
+	@echo " * * * Testing '18-priority-exit' * * *"
+	@bin/18-priority-exit
+	@echo ""
+
 	@echo " * * * Testing '21-create-many 42' * * *"
 	@bin/21-create-many 42
 	@echo ""

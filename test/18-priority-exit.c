@@ -38,7 +38,7 @@ int main(int argc, char **argv) {
   ths = malloc(NB*sizeof(thread_t));
   int i;
   for(i=0; i<NB; i++) {
-    thread_create(&ths[i], thfunc, (void*)i);
+    thread_create(&ths[i], thfunc, (void*)(size_t)i);
     set_thread_priority(ths[i], rand()%MAX_PRIORITY+1);
   }
   //debug_priority();
