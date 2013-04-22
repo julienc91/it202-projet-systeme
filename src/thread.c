@@ -101,12 +101,6 @@ void stock_return(void * funcarg, void* (*func)())
 void threads_destroy(void)
 {
 	DEBUG ("threads_destroy")
-	pthread_mutex_lock(&lock);
-	threadList.currentThreads[0]->state = DEAD;
-	TAILQ_INSERT_TAIL(&(threadList.list_dead), threadList.currentThreads[0], entries);
-	pthread_mutex_unlock(&lock);
-
-	DEBUG ("Main marked as dead")
 
 	unsigned int i;
 	for(i = 0; i < nb_cores-1; i++)
