@@ -9,9 +9,9 @@ OBJECTS = $(SOURCES:.c=)
 
 all:	thread.o $(OBJECTS)
 
-thread.o:	thread.h thread.c
+thread.o:	../src/thread.h ../src/thread.c
 	@echo  -n " Compiling " $@ "..."
-	$(CC) $(CFLAGS) -o thread.o -c thread.c $(LDFLAGS)
+	$(CC) $(CFLAGS) -o thread.o -c ../src/thread.c $(LDFLAGS)
 	@echo "\t Done."
 
 %:	%.c
