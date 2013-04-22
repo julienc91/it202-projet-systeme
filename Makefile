@@ -30,10 +30,7 @@ $(OBJECTS): $(SOURCES) bin/thread.o src/thread.c
 	$(CC) $(CFLAGS) -o $@ $(subst bin,test,$(@:%=%.c)) bin/thread.o $(LDFLAGS)
 	@echo "Done."
 
-bin/61-Voy_job: test/61-Voy_job.c
-	@echo -n " ******Compiling" $@ "... "
-	$(CC) $(CFLAGS) -o $@ $< $(LDFLAGS)
-	@echo "Done."
+
 
 check:	thread.o $(OBJECTS)
 
@@ -51,6 +48,10 @@ check:	thread.o $(OBJECTS)
 
 	@echo " * * * Testing '12-join-main' * * *"
 	@bin/12-join-main
+	@echo ""
+
+	@echo " * * * Testing '17-priority' * * *"
+	@bin/17-priority
 	@echo ""
 
 	@echo " * * * Testing '21-create-many 42' * * *"
