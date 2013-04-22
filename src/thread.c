@@ -45,14 +45,14 @@ unsigned int get_cores(void)
 //fonction qui renvoie l'identifiant spécifique du thread courant
 long get_id_thread(void)
 {
-	 long tmp;
+	long tmp;
 	if (pthread_getspecific(id_thread)==NULL)
 	{
 		tmp =-1;
 	}
 	else
 	{
-		tmp = (long) ((long) pthread_getspecific(id_thread)- (long)1);
+		tmp = (long) ((long) pthread_getspecific(id_thread) - (long) 1);
 	}
 	return tmp;
 }
@@ -62,6 +62,7 @@ void *thread_pthread_handler(void * v)
 {
 	pthread_setspecific(id_thread, v);
 	DEBUG ("handler")
+	printf("get_thread_id: %ld\n", get_id_thread());
 	thread_yield();
 	return v;
 }
@@ -113,8 +114,8 @@ void threads_destroy(void)
 	{
 		free(threadList.pthreads[i]);
 	}
-	DEBUG ("Apres free des threads")	
-	
+	DEBUG ("Apres free des threads")
+
 	thread_t item, tmp_item;
 	free(return_t.uc_stack.ss_sp);
 
@@ -230,6 +231,7 @@ void thread_init_function(void)
 				DEBUG("pthread_init_function")
 				threadList.pthreads[i] = malloc(sizeof(pthread_t));
 				pthread_create(threadList.pthreads[i], NULL, thread_pthread_handler, (void*)i+2);
+				printf("id thread: %d\n", i+2);
 				usleep(100);
 			}
 		}
@@ -350,7 +352,7 @@ extern int thread_yield(void)
 					TAILQ_INSERT_TAIL(&(threadList.list_dead), threadList.currentThreads[get_id_thread()], entries);
 					pthread_mutex_unlock(&lock);
 				}
-				
+
 				if(yield_again)
 				{
 					usleep(100);
@@ -450,6 +452,7 @@ extern int thread_join(thread_t thread, void **retval)
 
 extern void thread_exit(void *retval)
 {
+	DEBUG("entering thread_exit");
 	thread_init_function();
 	if(get_id_thread() != -1)
 	{
@@ -468,8 +471,10 @@ extern void thread_exit(void *retval)
 	}
 	thread_yield();
 
+	printf("DEBUG : Retval: %s  id_thread: %ld  state: %d \n", (char*) retval, get_id_thread(), (threadList.currentThreads[get_id_thread()])->state);
+	DEBUG("thread_exit, goto label")
+
 	//Cette fonction ne doit pas terminer
 	label:
-		DEBUG("thread_exit, goto label")
 		goto label;
 }
