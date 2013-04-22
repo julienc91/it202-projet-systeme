@@ -106,6 +106,7 @@ void threads_destroy(void)
 	for(i = 0; i < nb_cores-1; i++)
 	{
 		pthread_cancel(*(threadList.pthreads[i]));
+		pthread_join(*(threadList.pthreads[i]), NULL)	;
 	}
 	for(i = 0; i < nb_cores-1; i++)
 	{
@@ -264,6 +265,8 @@ extern int thread_create(thread_t *newthread, void *(*func)(void *), void *funca
 	getcontext(&((*newthread)->context));
 	((*newthread)->context).uc_stack.ss_size = STACK_SIZE;
 	((*newthread)->context).uc_stack.ss_sp = malloc(STACK_SIZE);
+	memset(((*newthread)->context).uc_stack.ss_sp, 0, STACK_SIZE);
+
 	if(((*newthread)->context).uc_stack.ss_sp == NULL)
 	{
 		free(*newthread);
