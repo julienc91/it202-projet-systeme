@@ -62,6 +62,8 @@ void *thread_pthread_handler(void * v)
 {
 	pthread_setspecific(id_thread, v);
 	DEBUG ("handler")
+	printf("id_thread (get_spe): %ld\n", (long) pthread_getspecific(id_thread));
+	printf("id_thread (get_id): %ld\n", get_id_thread());
 	thread_yield();
 	return v;
 }
@@ -85,6 +87,7 @@ void stock_return(void * funcarg, void* (*func)())
 {
 	if(get_id_thread() != -1)
 	{
+		printf("Arguments de stock_return : %ld, %s\n", get_id_thread(), (char*)funcarg);
 		threadList.currentThreads[get_id_thread()]->retval = func(funcarg);
 	}
 	else
@@ -180,7 +183,10 @@ void thread_init_function(void)
 		}
 
 		pthread_key_create(&id_thread, NULL);
-		pthread_setspecific(id_thread, (void*)((unsigned long) 1));
+		pthread_setspecific(id_thread, (void*)((long) 1));
+		printf("id_main (get_spe): %ld\n", (long) pthread_getspecific(id_thread));
+		printf("id_main (get_id): %ld\n", get_id_thread());
+
 
 		// Code de base
 		TAILQ_INIT(&threadList.list);
@@ -316,7 +322,6 @@ extern int thread_yield(void)
 		if(!TAILQ_EMPTY(&threadList.list)) //si il y a des éléments dans la liste des threads prêts
 		{
 				thread = TAILQ_FIRST(&(threadList.list));
-
 				TAILQ_REMOVE(&(threadList.list), thread, entries);
 				pthread_mutex_unlock(&lock);
 
