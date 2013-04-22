@@ -202,21 +202,20 @@ Les tests précédemment évoqués ont également été lancés sous la supervis
 
 \subsection{Priorités des threads}
 
-En plus des objectifs minimaux des premières séances, une priorité a été ajoutée à chaque thread. Dans la structure \textit{thread\_t}, deux champs ont été ajoutés : \textit{int default\_priority} et \textit{int current\_priority}. De plus, la structure \textit{Threads} a également un champ supplémentaire : \textit{int max\_priority}, qui stocke la priorité maximale des threads qui sont présents dans la file.\\
+En plus des objectifs minimaux des premières séances, un premier essai sur la gestion des priorités a été intégrée au projet. Dans la structure \textit{thread\_t}, deux attributs ont été ajoutés : \texttt{int default\_priority} et \texttt{int current\_priority}. La structure \textit{Threads} a elle aussi un attribut supplémentaire: \textit{int max\_priority}, qui contient la priorité maximale des threads qui sont présents dans la file.
 
-La gestion des priorités est conçue de la manière suivante. Lors de la création du thread, une priorité par défaut lui est attribuée. L'utilisateur peut modifier la priorité d'un thread par l'appel à la fonction \textit{set\_thread\_priority} (cette fonction a été faite pour éviter de modifier le prototype des fonctions déjà existantes et utilisées par les tests).
+La gestion des priorités est conçue de la manière suivante: lors de la création du thread, une priorité par défaut lui est attribuée. L'utilisateur peut modifier la priorité d'un thread par un appel à la fonction \texttt{set\_thread\_priority} (cette fonction a été faite pour éviter de modifier le prototype des fonctions déjà existantes et utilisées par les tests).
 
-Lors d'un yield, la priorité courante du thread est diminuée de 1. Si un thread a une priorité négative ou nulle, il n'est pas lancé et sa priorité est tout de même décrémentée. Ainsi, les threads ayant une priorité haute seront appelés un plus grand nombre de fois (proportionellement à leur priorité). Lorsque tous les threads ont une priorité inférieure ou égale à zéro, la priorité de chaque thread est remise à sa valeur initiale ; et la boucle recommence.\\
+Lors d'un \textit{yields}, la priorité courante du thread est décrémentée. Si un thread a une priorité négative ou nulle, il n'est pas lancé et sa priorité est tout de même décrémentée. Lorsque tous les threads ont une priorité inférieure ou égale à zéro, la priorité de chaque thread est remise à sa valeur initiale ; et la boucle recommence. Ainsi, les threads ayant une priorité haute seront appelés un plus grand nombre de fois (proportionellement à leur priorité).\\
 
-Deux tests ont été implémentés. Le premier, \textit{17-priority}, vérifie que chaque thread est proportionnel à sa priorité. Chaque thread est créé et une priorité lui est associé. On fait ensuite un nombre fixé de \textit{yield}. On affiche à la fin le nombre de fois que l'on a rendu la main à chaque thread. Voici ce que nous obtenons pour 5 threads :
+Deux tests ont été implémentés. Le premier, \texttt{17-priority}, vérifie que le nombre d'appels de chaque thread, sur un nombre fixé de \textit{yields}, est proportionnel à sa priorité. Voici le résultat obtenu pour 5 threads :
 \begin{verbatim}
  * * * Testing '17-priority' * * *
 Thread priority:     | 3   | 3   | 1   | 3   | 5   |
 Nb calls per thread: | 299 | 299 | 100 | 299 | 499 |
 \end{verbatim}
 
-
-Le second test, \textit{18-priority-exit} vérifie la même chose d'une manière différente. De la même manière, on lance une boucle faisant des yield. Cette fois un thread prend fin lorsqu'il a été appelé un certain nombre de fois (fixé au départ). Lorsqu'un thread s'arrète, on affiche le numéro de l'itération courante. La sortie suivante montre le résultat du test pour 5 threads. On peut voir que les threads à forte priorité s'arrètent bien avant ceux dont la priorité est plus faible. C'est le résultat attendu puisque les threads prioritaire reprennent la main plus souvent.
+Le second test, \texttt{18-priority-exit} vérifie en plus l'intégrité de la file de threads lors de la suppression d'un thread de la liste (par un appel à \texttt{thread\_exit} par exemple). De la même manière, on lance une boucle faisant des \textit{yields}. Cette fois, un thread prend fin lorsqu'il a été appelé un certain nombre de fois (fixé au départ). Lorsqu'un thread s'arrète, on affiche le numéro de l'itération courante. La sortie suivante montre le résultat du test pour 5 threads. Les threads à forte priorité s’arrêtent bien avant ceux dont la priorité est plus faible, ce qui est le résultat attendu puisque les threads prioritaire reprennent la main plus souvent.
 \begin{verbatim}
  * * * Testing '18-priority-exit' * * *
 Thread 1 ended at 347th loop (priority 4)
@@ -231,10 +230,13 @@ Thread 2 ended at 500th loop (priority 1)
   Priority-Nb calls:  4-100   1-100   3-100   2-100   4-100
 \end{verbatim}
 
+Néanmoins, ce système de priorités est loin d'être exempt de défauts. En effet, cette méthode s'applique très mal par exemple dans le cas où un thread a une priorité très importante, et tous les autres ont la priorité la plus faible: au moment du \textit{yield}, l'algorithme mis en place fera très fréquemment le tour complet de la file avant de finalement redonner la main au thread qu'il venait de quitter.
 
 
 \section{Nos objectifs pour la suite du projet}
 
-Actuellement, l'équipe s'oriente sur le fait de rendre le projet compatible avec les architectures multic\oe urs. En parallèle, de nouveaux tests sont créés pour vérifier l'intégrité du code source. Les autres objectifs secondaires n'ont pour le moment pas été choisis et dépendront principalement de l'avancement et de la réussite des travaux actuellement en cours.
+Actuellement, l'équipe s'oriente sur le fait de rendre le projet compatible avec les architectures multic\oe urs. En parallèle, de nouveaux tests sont créés pour vérifier l'intégrité du code source. La gestion des priorités devrait également \^etre améliorée en se basant non pas sur le nombre d'appels, mais sur le temps d'exécution. Cette nouvelle méthode devrait se baser sans trop de problèmes sur l'implémentation de la technique existante, mais nécessitera d'abord la mise en place de la préemption.
+
+Les autres objectifs secondaires n'ont pour le moment pas été choisis et dépendront principalement de l'avancement et de la réussite des travaux actuellement en cours.
 
 \end{document}
