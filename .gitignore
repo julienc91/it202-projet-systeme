@@ -16,7 +16,7 @@ bin/thread.o
 rapport/rapport_intermediaire.aux
 rapport/rapport_intermediaire.log
 rapport/rapport_intermediaire.pdf
-src/contextes
-src/example
-src/thread.o
+examples/contextes
+examples/example
+examples/thread.o
 
