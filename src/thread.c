@@ -14,6 +14,18 @@
 static Threads threadList ;
 static ucontext_t return_t;
 
+//A appeler lorsque le thread ayant la priorité maximale sort de la liste
+void update_max_priority() {
+  thread_t item, tmp_item;
+  threadList.max_priority = 1;
+  for (item = TAILQ_FIRST(&(threadList.list)); item != NULL; item = tmp_item)
+    {
+      tmp_item = TAILQ_NEXT(item, entries);
+      if(threadList.max_priority < item->default_priority)
+	threadList.max_priority = item->default_priority;
+    }
+}
+
 void debug_priority() {
   thread_t item, tmp_item;
   for (item = TAILQ_FIRST(&(threadList.list)); item != NULL; item = tmp_item)
@@ -24,6 +36,7 @@ void debug_priority() {
   printf("\n");
 }
 
+//priority > 0
 int set_thread_priority(thread_t thread, int priority) {
   if(priority <= 0)
     return 0;
@@ -55,11 +68,14 @@ int get_cores(void)
 void thread_return()
 {
 	(threadList.currentThread)->state = DEAD;
+	if(threadList.currentThread->default_priority == threadList.max_priority)
+	  update_max_priority();
 	TAILQ_REMOVE(&(threadList.list), threadList.currentThread, entries);
 	TAILQ_INSERT_TAIL(&(threadList.list_dead), threadList.currentThread, entries);
 
 	thread_yield();
 }
+
 //fonction appelée dans le contexte lors de la création d'un thread
 void stock_return(void * funcarg, void* (*func)())
 {
@@ -257,6 +273,8 @@ extern int thread_yield(void)
 		{
 			thread = TAILQ_FIRST(&(threadList.list_sleeping));
 			thread->state = READY;
+			if(thread->default_priority > threadList.max_priority)
+			  threadList.max_priority = thread->default_priority;
 			TAILQ_REMOVE(&(threadList.list_sleeping), thread, entries);
 			TAILQ_INSERT_HEAD(&(threadList.list), thread, entries);
 		}
@@ -271,7 +289,7 @@ extern int thread_yield(void)
 		
 		#ifdef DEBUG_MODE
 		thread->nb_calls++;
-		printf("Using thread %d (time %d) with priority: %d/%d\n", thread->id, thread->nb_calls, thread->current_priority, thread->default_priority);
+		//printf("Using thread %d (time %d) with priority: %d/%d\n", thread->id, thread->nb_calls, thread->current_priority, thread->default_priority);
 		#endif
 		
 		//Changement de contexte
@@ -304,6 +322,8 @@ extern int thread_join(thread_t thread, void **retval)
 
 				//mise en sommeil de l'ancien thread courant
 				tmp->state = SLEEPING;
+				if(tmp->default_priority == threadList.max_priority)
+				  update_max_priority();
 				TAILQ_REMOVE(&(threadList.list), tmp, entries);
 				TAILQ_INSERT_TAIL(&(threadList.list_sleeping), tmp, entries);
 
@@ -313,6 +333,8 @@ extern int thread_join(thread_t thread, void **retval)
 
 			case(SLEEPING):
 				tmp->state = SLEEPING;
+				if(tmp->default_priority == threadList.max_priority)
+				  update_max_priority();
 				TAILQ_REMOVE(&(threadList.list), tmp, entries);
 				TAILQ_INSERT_TAIL(&(threadList.list_sleeping), tmp, entries);
 				thread_yield();
@@ -341,6 +363,9 @@ extern void thread_exit(void *retval)
 
 	//Terminaison du thread courant
 	(threadList.currentThread)->state = DEAD;
+	if(threadList.currentThread->default_priority == threadList.max_priority)
+	  update_max_priority();
+
 	TAILQ_REMOVE(&(threadList.list), threadList.currentThread, entries);
 	TAILQ_INSERT_TAIL(&(threadList.list_dead), threadList.currentThread, entries);
 

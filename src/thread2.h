@@ -54,6 +54,7 @@ void threads_destroy();
 void thread_init_function(void);
 int get_cores(void);
 void debug_priority();
+void update_max_priority();
 
 
 
