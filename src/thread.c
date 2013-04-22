@@ -72,7 +72,6 @@ void thread_return()
 	if(get_id_thread() != -1)
 	{
 	(threadList.currentThreads[get_id_thread()])->state = DEAD;
-	//~ TAILQ_REMOVE(&(threadList.list), threadList.currentThreads[get_id_thread()], entries);
 	
 	pthread_mutex_lock(&lock);
 	TAILQ_INSERT_TAIL(&(threadList.list_dead), threadList.currentThreads[get_id_thread()], entries);
@@ -210,7 +209,6 @@ void thread_init_function(void)
 
 			threadList.mainThread = thread;
 			threadList.currentThreads[0] = thread;
-			//~ TAILQ_INSERT_HEAD(&(threadList.list), thread, entries);
 
 			getcontext(&return_t);
 			return_t.uc_stack.ss_size = STACK_SIZE;
@@ -283,13 +281,13 @@ extern int thread_create(thread_t *newthread, void *(*func)(void *), void *funca
 	//Ajout en tête de la pile des threads
 	pthread_mutex_lock(&lock);
 	TAILQ_INSERT_TAIL(&(threadList.list), (*newthread), entries);
-	pthread_mutex_unlock(&lock);
-
 
 	if(get_id_thread() != -1 && threadList.currentThreads[get_id_thread()]!=NULL)
 	{
 		getcontext(&(threadList.currentThreads[get_id_thread()]->context));
 	}
+	pthread_mutex_unlock(&lock);
+
 	return 0;
 }
 /*
@@ -315,24 +313,9 @@ extern int thread_yield(void)
 
 	if(!TAILQ_EMPTY(&threadList.list)) //si il y a des éléments dans la liste des threads prêts
 	{
-			thread = TAILQ_FIRST(&(threadList.list));
-			
-			//~ //si le premier thread est le thread courant, on prend le suivant
-			//~ if ((thread == tmp) && (TAILQ_NEXT(thread, entries) != NULL))
-			//~ {
-					//~ thread = TAILQ_NEXT(thread, entries);
-			//~ }
-			//~ //si le thread courant est le seul thread prêt, on continue l'exécution
-			//~ else if ((thread == tmp) && (TAILQ_NEXT(thread, entries) == NULL))
-			//~ {
-					//~ pthread_mutex_unlock(&lock);
-					//~ return 0;
-			//~ }
-		   
+			thread = TAILQ_FIRST(&(threadList.list));		   
 			TAILQ_REMOVE(&(threadList.list), thread, entries);
 			pthread_mutex_unlock(&lock);
-
-			//~ TAILQ_INSERT_TAIL(&(threadList.list), thread, entries);
 	}
 	else if (!TAILQ_EMPTY(&threadList.list_sleeping))// si il n'y a plus que des threads endormis
 	{
@@ -340,13 +323,9 @@ extern int thread_yield(void)
 			thread->state = READY;
 			TAILQ_REMOVE(&(threadList.list_sleeping), thread, entries);
 			pthread_mutex_unlock(&lock);
-
-
-			//~ TAILQ_INSERT_TAIL(&(threadList.list), thread, entries);
 	}
 	else //si tous les threads sont morts ou endormis
 	{
-			//~ fprintf(stderr, "Fin : Plus de threads prets ou endormis\n");
 			unsigned int i;
 			int yield_again = FALSE;
 			for (i = 0; i< nb_cores; i++)
@@ -370,7 +349,6 @@ extern int thread_yield(void)
 
 			if(yield_again)
 			{
-				//~ DEBUG("yield_again")
 				usleep(100);
 				thread_yield();
 			}
@@ -427,11 +405,9 @@ extern int thread_join(thread_t thread, void **retval)
 				{
 					pthread_mutex_lock(&lock);
 					tmp->state = SLEEPING;
-					//~ TAILQ_REMOVE(&(tehreadList.list), tmp, entries);
 					TAILQ_INSERT_TAIL(&(threadList.list_sleeping), tmp, entries);
 					pthread_mutex_unlock(&lock);
 				}
-
 				
 				//Changement de contexte
 				if (tmp != NULL)
