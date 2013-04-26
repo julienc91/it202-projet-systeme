@@ -5,7 +5,7 @@
 
 #include "thread.h"
 #include "../test/pthread_test.h"
-#define MAX_THREAD 4096 * 4096 //1024 * 1024
+#define MAX_THREAD 1024 * 1024
 
 pthread_mutex_t mut = PTHREAD_MUTEX_INITIALIZER;
 int tab[MAX_THREAD];
@@ -62,7 +62,7 @@ int main(int argc, char * argv[]){
   }
 
   for(i=0; i<N ; i++){
-    tid[i] = 
+    tid[i] =
 #ifndef PTHREAD
       (void *)(size_t)
 #endif
