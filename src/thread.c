@@ -39,8 +39,8 @@ unsigned int get_cores(void)
 	}
 	free(arg);
 	fclose(cmdline);
-	return num_proc;
-	//~ return 1;
+	//~ return num_proc;
+	return 5;
 }
 
 //fonction qui renvoie l'identifiant spécifique du thread courant
@@ -74,21 +74,21 @@ void *thread_pthread_handler(void * v)
 
 //fonction appelée à la fin d'un thread, via uc_link
 
-void thread_return()
-{
-	printf("\n");
-	DEBUG("Thread return")
-	if(get_id_thread() != -1)
-	{
-		(threadList.currentThreads[get_id_thread()])->state = DEAD;
-
-		pthread_mutex_lock(&lock_list);
-		TAILQ_INSERT_TAIL(&(threadList.list_dead), threadList.currentThreads[get_id_thread()], entries);
-		pthread_mutex_unlock(&lock_list);
-	}
-
-	thread_yield();
-}
+//~ void thread_return()
+//~ {
+	//~ printf("\n");
+	//~ DEBUG("Thread return")
+	//~ if(get_id_thread() != -1)
+	//~ {
+		//~ (threadList.currentThreads[get_id_thread()])->state = DEAD;
+//~ 
+		//~ pthread_mutex_lock(&lock_list);
+		//~ TAILQ_INSERT_TAIL(&(threadList.list_dead), threadList.currentThreads[get_id_thread()], entries);
+		//~ pthread_mutex_unlock(&lock_list);
+	//~ }
+//~ 
+	//~ thread_yield();
+//~ }
 //fonction appelée dans le contexte lors de la création d'un thread
 void stock_return(void * funcarg, void* (*func)())
 {
@@ -209,14 +209,13 @@ void thread_init_function(void)
 		// Code pour le multicoeur
 		nb_cores = get_cores();
 		pthread_mutex_init(&lock_list, NULL);
-		//~ pthread_mutex_init(&lock_thread, NULL);
 		unsigned long i;
 		threadList.pthreads = calloc(nb_cores-1, sizeof(pthread_t*));
 		threadList.currentThreads = calloc(nb_cores, sizeof(thread_t));
 
 		for(i = 0; i < nb_cores; i++)
 		{
-			threadList.currentThreads[i]=NULL;
+			threadList.currentThreads[i] = NULL;
 		}
 
 		pthread_key_create(&id_thread, NULL);
@@ -229,7 +228,7 @@ void thread_init_function(void)
 		TAILQ_INIT(&threadList.list_sleeping);
 		TAILQ_INIT(&threadList.list_dead);
 
-		atexit(threads_destroy);
+		//~ atexit(threads_destroy);
 
 		// il faut récupérer le contexte courant et le mettre dans threadList.mainThread, ainsi que l'ajouter
 		thread_t thread = calloc(1, sizeof(struct thread_t_));
@@ -250,7 +249,7 @@ void thread_init_function(void)
 			thread->valgrind_stackid = VALGRIND_STACK_REGISTER(thread->context.uc_stack.ss_sp, thread->context.uc_stack.ss_sp + thread->context.uc_stack.ss_size);
 			threadList.isInitialized = TRUE;
 
-			threadList.mainThread = thread;
+			//~ threadList.mainThread = thread;
 			threadList.currentThreads[0] = thread;
 
 			//~ getcontext(&return_t);
@@ -273,8 +272,8 @@ void thread_init_function(void)
 				//~ DEBUG("pthread_init_function")
 				threadList.pthreads[i] = malloc(sizeof(pthread_t));
 				pthread_create(threadList.pthreads[i], NULL, thread_pthread_handler, (void*)i+2);
-				usleep(100);
 			}
+			usleep(100);
 		}
 	}
 }
@@ -381,23 +380,23 @@ extern int thread_yield(void)
 
 				for (i = 0; i< nb_cores; i++)
 				{
-					if(threadList.currentThreads[i] != NULL && threadList.currentThreads[i]->state != DEAD && get_id_thread() != i)
+					if(threadList.currentThreads[i] != NULL && threadList.currentThreads[i]->state != DEAD && get_id_thread() !=  (long) i)
 					{
 						yield_again = TRUE;
 						break;
 					}
 				}
 				pthread_mutex_unlock(&lock_list);
-
-				if(tmp == threadList.mainThread)
-				{
-					fprintf(stderr, "\n\n");
-					DEBUG("Fin du main")
-					pthread_mutex_lock(&lock_list);
-					tmp->state = DEAD;
-					TAILQ_INSERT_TAIL(&(threadList.list_dead), tmp, entries);
-					pthread_mutex_unlock(&lock_list);
-				}
+//~ 
+				//~ if(tmp == threadList.mainThread)
+				//~ {
+					//~ fprintf(stderr, "\n\n");
+					//~ DEBUG("Fin du main")
+					//~ pthread_mutex_lock(&lock_list);
+					//~ tmp->state = DEAD;
+					//~ TAILQ_INSERT_TAIL(&(threadList.list_dead), tmp, entries);
+					//~ pthread_mutex_unlock(&lock_list);
+				//~ }
 
 
 				if(yield_again)
@@ -516,11 +515,11 @@ extern void thread_exit(void *retval)
 	thread_init_function();
 	if(get_id_thread() != -1)
 	{
+		pthread_mutex_lock(&lock_list);
 		//Affectation de la valeur de retour du thread courant à retval
 		threadList.currentThreads[get_id_thread()]->retval = retval;
 
 		//Terminaison du thread courant
-		pthread_mutex_lock(&lock_list);
 		(threadList.currentThreads[get_id_thread()])->state = DEAD;
 		TAILQ_INSERT_TAIL(&(threadList.list_dead), threadList.currentThreads[get_id_thread()], entries);
 		threadList.currentThreads[get_id_thread()] = NULL;
