@@ -11,14 +11,15 @@
 #include "queue.h"
 #include "thread.h"
 
-#define DEBUG(string) printf("Function : %s , line %d of file %s (\n", string, __LINE__, __FILE__);
+#define DEBUG(string) fprintf(stderr, "FUNCTION : %s , line %d of file %s\n", string, __LINE__, __FILE__);
 
 static Threads threadList = {FALSE};
 static ucontext_t return_t;
 static pthread_key_t id_thread;
-static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER; 
+static pthread_mutex_t lock;
 static unsigned int nb_cores;
 
+//fonction qui renvoie le nombre de coeur d'un ordinateur
 unsigned int get_cores(void)
 {
 	FILE *cmdline = fopen("/proc/cpuinfo", "rb");
@@ -41,41 +42,49 @@ unsigned int get_cores(void)
 	return num_proc;
 }
 
+//fonction qui renvoie l'identifiant spécifique du thread courant
 long get_id_thread(void)
 {
-	 long tmp; 
-	if (pthread_getspecific(id_thread)==NULL)
+	long tmp;
+	if (pthread_getspecific(id_thread) == NULL)
 	{
+		DEBUG("ERREUR DE GET ID THREAD")
 		tmp =-1;
 	}
 	else
 	{
-		tmp = (long) ((long) pthread_getspecific(id_thread)- (long)1);
+		tmp = (long) ((long) pthread_getspecific(id_thread) - (long) 1);
 	}
 	return tmp;
 }
 
+//fonction appelée lors de la creation d'un thread noyau
 void *thread_pthread_handler(void * v)
 {
-	pthread_setspecific(id_thread, v);	
-	DEBUG ("handler")
+	pthread_setspecific(id_thread, v);
+	//~ DEBUG ("handler")
+	//~ printf("id_thread (get_spe): %ld\n", (long) pthread_getspecific(id_thread));
+	//~ fprintf(stderr, "\nid_thread (get_id): %ld\n\n", get_id_thread());
+	
 	thread_yield();
+	
 	return v;
 }
 
 //fonction appelée à la fin d'un thread, via uc_link
 void thread_return()
 {
+	printf("\n");
+	DEBUG("Thread return")
 	if(get_id_thread() != -1)
 	{
 	(threadList.currentThreads[get_id_thread()])->state = DEAD;
-	//~ TAILQ_REMOVE(&(threadList.list), threadList.currentThreads[get_id_thread()], entries);
-	
+
 	pthread_mutex_lock(&lock);
 	TAILQ_INSERT_TAIL(&(threadList.list_dead), threadList.currentThreads[get_id_thread()], entries);
 	pthread_mutex_unlock(&lock);
 	}
-	
+
 	thread_yield();
 }
 //fonction appelée dans le contexte lors de la création d'un thread
@@ -83,6 +92,8 @@ void stock_return(void * funcarg, void* (*func)())
 {
 	if(get_id_thread() != -1)
 	{
+		//~ fprintf(stderr, "Arguments de stock_return (id, string): %ld, %s\n", get_id_thread(), (char*)funcarg);
+		//~ printf("Arguments de stock_return (id, string): %ld, %s\n", get_id_thread(), (char*)funcarg);
 		threadList.currentThreads[get_id_thread()]->retval = func(funcarg);
 	}
 	else
@@ -95,25 +106,24 @@ void stock_return(void * funcarg, void* (*func)())
 void threads_destroy(void)
 {
 	DEBUG ("threads_destroy")
-	pthread_mutex_lock(&lock);
-	threadList.currentThreads[0]->state = DEAD;
-	TAILQ_INSERT_TAIL(&(threadList.list_dead), threadList.currentThreads[0], entries);
-	pthread_mutex_unlock(&lock);
-	
-	DEBUG ("Main marked as dead")
 
-	thread_t item, tmp_item;
-	free(return_t.uc_stack.ss_sp);
-	
-	DEBUG ("After free(return_t.uc_stack.ss_sp)")
-	
 	unsigned int i;
 	for(i = 0; i < nb_cores-1; i++)
 	{
-		pthread_join(*(threadList.pthreads[i]), NULL);
+		pthread_cancel(*(threadList.pthreads[i]));
+		pthread_join(*(threadList.pthreads[i]), NULL)	;
+	}
+	for(i = 0; i < nb_cores-1; i++)
+	{
 		free(threadList.pthreads[i]);
 	}
-	
+	DEBUG ("Apres free des threads")
+
+	thread_t item, tmp_item;
+	free(return_t.uc_stack.ss_sp);
+
+	DEBUG ("After free(return_t.uc_stack.ss_sp)")
+
 	free(threadList.pthreads);
 	free(threadList.currentThreads);
 
@@ -152,28 +162,32 @@ void threads_destroy(void)
 		free(item->context.uc_stack.ss_sp);
 		free(item);
 	}
-	
+
 	DEBUG ("(fin de )threads_destroy")
 }
 
+//fonction d'initialisation, à n'appeler qu'une seule fois au premier appel
 void thread_init_function(void)
 {
 	if(!threadList.isInitialized)
 	{
 		// Code pour le multicoeur
 		nb_cores = get_cores();
+		pthread_mutex_init(&lock, NULL);
 		unsigned long i;
 		threadList.pthreads = calloc(nb_cores-1, sizeof(pthread_t*));
 		threadList.currentThreads = calloc(nb_cores, sizeof(thread_t));
-		
+
 		for(i = 0; i < nb_cores; i++)
 		{
 			threadList.currentThreads[i]=NULL;
 		}
 
 		pthread_key_create(&id_thread, NULL);
-		pthread_setspecific(id_thread, (void*)((unsigned long) 1));
-		
+		pthread_setspecific(id_thread, (void*)((long) 1));
+		//~ printf("id_main (get_spe): %ld\n", (long) pthread_getspecific(id_thread));
+		//~ printf("id_main (get_id): %ld\n", get_id_thread());
+
 		// Code de base
 		TAILQ_INIT(&threadList.list);
 		TAILQ_INIT(&threadList.list_sleeping);
@@ -194,16 +208,14 @@ void thread_init_function(void)
 		thread->already_done = FALSE;
 		thread->retval = NULL;
 		getcontext(&(thread->context));
-		
+
 		if(!threadList.isInitialized)
 		{
 			thread->valgrind_stackid = VALGRIND_STACK_REGISTER(thread->context.uc_stack.ss_sp, thread->context.uc_stack.ss_sp + thread->context.uc_stack.ss_size);
-
 			threadList.isInitialized = TRUE;
 
 			threadList.mainThread = thread;
 			threadList.currentThreads[0] = thread;
-			//~ TAILQ_INSERT_HEAD(&(threadList.list), thread, entries);
 
 			getcontext(&return_t);
 			return_t.uc_stack.ss_size = STACK_SIZE;
@@ -218,12 +230,13 @@ void thread_init_function(void)
 
 			return_t.uc_link = NULL;
 			makecontext(&return_t, (void (*)(void))thread_return, 0);
-			
+
 			for(i = 0; i < nb_cores-1; i++)
 			{
 				DEBUG("pthread_init_function")
 				threadList.pthreads[i] = malloc(sizeof(pthread_t));
 				pthread_create(threadList.pthreads[i], NULL, thread_pthread_handler, (void*)i+2);
+				//~ printf("id thread: %ld\n", i+2);
 				usleep(100);
 			}
 		}
@@ -256,6 +269,8 @@ extern int thread_create(thread_t *newthread, void *(*func)(void *), void *funca
 	getcontext(&((*newthread)->context));
 	((*newthread)->context).uc_stack.ss_size = STACK_SIZE;
 	((*newthread)->context).uc_stack.ss_sp = malloc(STACK_SIZE);
+	memset(((*newthread)->context).uc_stack.ss_sp, 0, STACK_SIZE);
+
 	if(((*newthread)->context).uc_stack.ss_sp == NULL)
 	{
 		free(*newthread);
@@ -265,8 +280,8 @@ extern int thread_create(thread_t *newthread, void *(*func)(void *), void *funca
 
 	(*newthread)->valgrind_stackid = VALGRIND_STACK_REGISTER(((*newthread)->context).uc_stack.ss_sp,((*newthread)->context).uc_stack.ss_sp + ((*newthread)->context).uc_stack.ss_size);
 
-	((*newthread)->context).uc_link = &return_t;
 	makecontext(&((*newthread)->context), (void (*)(void))*stock_return, 2, funcarg, (void (*)(void))func);
+	((*newthread)->context).uc_link = &return_t;
 
 	//Initialisation des attributs
 	(*newthread)->already_done = FALSE;
@@ -276,124 +291,115 @@ extern int thread_create(thread_t *newthread, void *(*func)(void *), void *funca
 	//Ajout en tête de la pile des threads
 	pthread_mutex_lock(&lock);
 	TAILQ_INSERT_TAIL(&(threadList.list), (*newthread), entries);
-	pthread_mutex_unlock(&lock);
 
-
-	if(get_id_thread() != -1 && threadList.currentThreads[get_id_thread()]!=NULL)
+	if(get_id_thread() != -1 && threadList.currentThreads[get_id_thread()] != NULL)
 	{
 		getcontext(&(threadList.currentThreads[get_id_thread()]->context));
 	}
+	pthread_mutex_unlock(&lock);
+
 	return 0;
 }
 /*
- * Fonctionnement : yield() appelé depuis le main envoie vers le sommet de la file,
- * sinon renvoie vers le main
+ * Fonctionnement : yield() envoie vers le sommet de la file
  */
 extern int thread_yield(void)
 {
-	thread_init_function();
-	thread_t tmp = NULL;
-	thread_t thread = NULL;
-	
-	if (get_id_thread() != -1)
-	{
-		tmp = threadList.currentThreads[get_id_thread()];
-	}
-	else
-	{
-		DEBUG("thread_yield")
-	}
-	 //Recherche du premier thread prêt
- 	pthread_mutex_lock(&lock);
+	yield_begin:
+		thread_init_function();
+		thread_t tmp = NULL;
+		thread_t thread = NULL;
 
-	if(!TAILQ_EMPTY(&threadList.list)) //si il y a des éléments dans la liste des threads prêts
-	{
-			thread = TAILQ_FIRST(&(threadList.list));
-			
-			//~ //si le premier thread est le thread courant, on prend le suivant
-			//~ if ((thread == tmp) && (TAILQ_NEXT(thread, entries) != NULL))
-			//~ {
-					//~ thread = TAILQ_NEXT(thread, entries);
-			//~ }
-			//~ //si le thread courant est le seul thread prêt, on continue l'exécution
-			//~ else if ((thread == tmp) && (TAILQ_NEXT(thread, entries) == NULL))
-			//~ {
-					//~ pthread_mutex_unlock(&lock);
-					//~ return 0;
-			//~ }
-		   
-			TAILQ_REMOVE(&(threadList.list), thread, entries);
-			pthread_mutex_unlock(&lock);
+		if (get_id_thread() != -1)
+		{
+			tmp = threadList.currentThreads[get_id_thread()];
+		}
+		else
+		{
+			DEBUG("thread_yield")
+		}
+		//Recherche du premier thread prêt
+	 	pthread_mutex_lock(&lock);
 
-			//~ TAILQ_INSERT_TAIL(&(threadList.list), thread, entries);
-	}
-	else if (!TAILQ_EMPTY(&threadList.list_sleeping))// si il n'y a plus que des threads endormis
-	{
-			thread = TAILQ_FIRST(&(threadList.list_sleeping));
-			thread->state = READY;
-			TAILQ_REMOVE(&(threadList.list_sleeping), thread, entries);
-			pthread_mutex_unlock(&lock);
+		if(!TAILQ_EMPTY(&threadList.list)) //si il y a des éléments dans la liste des threads prêts
+		{
+				thread = TAILQ_FIRST(&(threadList.list));
+				TAILQ_REMOVE(&(threadList.list), thread, entries);
+				pthread_mutex_unlock(&lock);
 
-
-			//~ TAILQ_INSERT_TAIL(&(threadList.list), thread, entries);
-	}
-	else //si tous les threads sont morts ou endormis
-	{
-			//~ fprintf(stderr, "Fin : Plus de threads prets ou endormis\n");
-			unsigned int i;
-			int yield_again = FALSE;
-			for (i = 0; i< nb_cores; i++)
-			{
-				if(threadList.currentThreads[i]!=NULL && threadList.currentThreads[i]->state!=DEAD)
+		}
+		else if (!TAILQ_EMPTY(&threadList.list_sleeping))// si il n'y a plus que des threads endormis
+		{
+				thread = TAILQ_FIRST(&(threadList.list_sleeping));
+				thread->state = READY;
+				TAILQ_REMOVE(&(threadList.list_sleeping), thread, entries);
+				pthread_mutex_unlock(&lock);
+		}
+		else //si tous les threads sont morts
+		{
+				unsigned int i;
+				int yield_again = FALSE;
+				for (i = 0; i< nb_cores; i++)
 				{
-					yield_again = TRUE;
-					break;
+					if(threadList.currentThreads[i] != NULL && threadList.currentThreads[i]->state != DEAD)
+					{
+						yield_again = TRUE;
+						break;
+					}
 				}
-			}
-			pthread_mutex_unlock(&lock);
+				pthread_mutex_unlock(&lock);
 
-			if(tmp == threadList.mainThread)
+				if(tmp == threadList.mainThread)
+				{
+					fprintf(stderr, "\n\n");
+					DEBUG("Fin du main")
+					pthread_mutex_lock(&lock);
+					tmp->state = DEAD;
+					//~ TAILQ_INSERT_TAIL(&(threadList.list_dead), threadList.currentThreads[get_id_thread()], entries);
+					TAILQ_INSERT_TAIL(&(threadList.list_dead), tmp, entries);
+					pthread_mutex_unlock(&lock);
+				}
+
+				if(yield_again)
+				{
+					usleep(100);
+					goto yield_begin;
+				}
+				
+				fprintf(stderr, "\nDEBUG : Fin du thread %ld\n\n", get_id_thread());
+				return 0;
+		}
+		//Màj du currentThread dans la threadList
+		if (get_id_thread() != -1)
+		{
+			threadList.currentThreads[get_id_thread()] = thread;
+		}
+		//Changement de contexte
+		if(tmp == NULL)
+		{
+			setcontext(&(threadList.currentThreads[get_id_thread()]->context));
+		}
+		else
+		{
+			if(tmp->state == READY)
 			{
-				DEBUG("fin du main")
 				pthread_mutex_lock(&lock);
-				tmp->state = DEAD;
-				TAILQ_INSERT_TAIL(&(threadList.list_dead), threadList.currentThreads[get_id_thread()], entries);
+				TAILQ_INSERT_TAIL(&(threadList.list), tmp, entries);
 				pthread_mutex_unlock(&lock);
 			}
-
-			if(yield_again)
-			{
-				//~ DEBUG("yield_again")
-				usleep(100);
-				thread_yield();
-			}
-
-			return 0;
-	}
-
-	//Màj du currentThread dans la threadList
-	if (get_id_thread() != -1)
-	{
-	threadList.currentThreads[get_id_thread()] = thread;
-	}
-	
-	//Changement de contexte
-	if(tmp == NULL)
-	{
-		setcontext(&(threadList.currentThreads[get_id_thread()]->context));
-	}
-	else
-	{
-		swapcontext(&(tmp->context), &(threadList.currentThreads[get_id_thread()]->context));
-	}
-	return 0;
+			
+			swapcontext(&(tmp->context), &(threadList.currentThreads[get_id_thread()]->context));
+		}
+		return 0;
 }
 
 extern int thread_join(thread_t thread, void **retval)
 {
 	thread_init_function();
+	//~ sleep(3);
+
 	thread_t tmp;
-	
+
 	if (thread == NULL)
 	{
 		*retval = NULL;
@@ -414,21 +420,23 @@ extern int thread_join(thread_t thread, void **retval)
 				//Echange de currentThread
 				tmp = threadList.currentThreads[get_id_thread()];
 				threadList.currentThreads[get_id_thread()] = thread;
-				
+
 				//mise en sommeil de l'ancien thread courant
 				if (tmp != NULL)
 				{
 					pthread_mutex_lock(&lock);
 					tmp->state = SLEEPING;
-					//~ TAILQ_REMOVE(&(tehreadList.list), tmp, entries);
 					TAILQ_INSERT_TAIL(&(threadList.list_sleeping), tmp, entries);
 					pthread_mutex_unlock(&lock);
 				}
 
-				
+
 				//Changement de contexte
 				if (tmp != NULL)
 				{
+					pthread_mutex_lock(&lock);
+					TAILQ_REMOVE(&(threadList.list), thread, entries);
+					pthread_mutex_unlock(&lock);
 					swapcontext(&(tmp->context), &(threadList.currentThreads[get_id_thread()]->context));
 				}
 				else
@@ -442,7 +450,6 @@ extern int thread_join(thread_t thread, void **retval)
 				{
 					pthread_mutex_lock(&lock);
 					tmp->state = SLEEPING;
-					//~ TAILQ_REMOVE(&(threadList.list), tmp, entries);
 					TAILQ_INSERT_TAIL(&(threadList.list_sleeping), tmp, entries);
 					pthread_mutex_unlock(&lock);
 				}
@@ -453,27 +460,27 @@ extern int thread_join(thread_t thread, void **retval)
 			break;
 		}
 	}
-	
+
 	if(retval!=NULL)
 	{
 		*retval = thread->retval;
 	}
-	
+
 	return 0;
 }
 
 extern void thread_exit(void *retval)
 {
+	DEBUG("entering thread_exit");
 	thread_init_function();
 	if(get_id_thread() != -1)
 	{
 		//Affectation de la valeur de retour du thread courant à retval
 		threadList.currentThreads[get_id_thread()]->retval = retval;
-		
+
 		//Terminaison du thread courant
 		pthread_mutex_lock(&lock);
 		(threadList.currentThreads[get_id_thread()])->state = DEAD;
-		//~ TAILQ_REMOVE(&(threadList.list), threadList.currentThreads[get_id_thread()], entries);
 		TAILQ_INSERT_TAIL(&(threadList.list_dead), threadList.currentThreads[get_id_thread()], entries);
 		pthread_mutex_unlock(&lock);
 	}
@@ -481,10 +488,13 @@ extern void thread_exit(void *retval)
 	{
 		DEBUG("thread_exit")
 	}
+	
 	thread_yield();
+
+	printf("DEBUG : Retval: %s  id_thread: %ld  state: %d \n", (char*) retval, get_id_thread(), (threadList.currentThreads[get_id_thread()])->state);
+	DEBUG("thread_exit, goto label")
 
 	//Cette fonction ne doit pas terminer
 	label:
-		DEBUG("thread_exit, goto label")
 		goto label;
 }
