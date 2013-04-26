@@ -2,6 +2,7 @@
 #include <assert.h>
 #include <stdlib.h>
 #include "thread.h"
+#include "../test/pthread_test.h"
 
 /* test de plein de create-destroy récursif.
  *

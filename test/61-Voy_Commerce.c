@@ -8,6 +8,7 @@
 #include <pthread.h>
 
 #include "thread.h"
+#include "../test/pthread_test.h"
 #include "61-Voy_types.h"
 
 

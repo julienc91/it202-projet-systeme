@@ -1,6 +1,13 @@
 CC=@gcc
-CFLAGS=-Wall -Wextra -g -Wno-unused-parameter -Wno-sign-compare -Isrc -Itest -O3
-LDFLAGS=-lm
+
+CFLAGS=-Wall -Wextra -g -Wno-unused-parameter -Wno-sign-compare -Isrc -Itest -DDEBUG_MODE -o3
+LDFLAGS=-lm -lpthread
+
+PTHREAD ?= 0
+ifeq ($(PTHREAD), 1)
+	CFLAGS+=-DPTHREAD
+endif
+
 
 SOURCES = $(wildcard test/*.c)
 OBJECTS0= $(SOURCES:.c=)
@@ -9,6 +16,7 @@ OBJECTS = $(subst test,bin,$(OBJECTS0))
 
 all:	thread.o $(OBJECTS)
 	@echo " All done."
+
 
 thread.o:	bin/thread.o
 
@@ -24,10 +32,7 @@ $(OBJECTS): $(SOURCES) bin/thread.o src/thread.c
 	$(CC) $(CFLAGS) -o $@ $(subst bin,test,$(@:%=%.c)) bin/thread.o $(LDFLAGS)
 	@echo "Done."
 
-bin/61-Voy_job: test/61-Voy_job.c
-	@echo -n " ******Compiling" $@ "... "
-	$(CC) $(CFLAGS) -o $@ $< $(LDFLAGS)
-	@echo "Done."
+
 
 check:	thread.o $(OBJECTS)
 
@@ -45,6 +50,14 @@ check:	thread.o $(OBJECTS)
 
 	@echo " * * * Testing '12-join-main' * * *"
 	@bin/12-join-main
+	@echo ""
+
+	@echo " * * * Testing '17-priority' * * *"
+	@bin/17-priority
+	@echo ""
+
+	@echo " * * * Testing '18-priority-exit' * * *"
+	@bin/18-priority-exit
 	@echo ""
 
 	@echo " * * * Testing '21-create-many 42' * * *"

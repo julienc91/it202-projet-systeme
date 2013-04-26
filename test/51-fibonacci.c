@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <assert.h>
 #include "thread.h"
+#include "../test/pthread_test.h"
 
 /* fibonacci.
  *
@@ -14,6 +15,9 @@
  * - thread_join() avec récupération de la valeur de retour
  * - retour sans thread_exit()
  */
+
+
+
 
 static void * fibo(void *_value)
 {

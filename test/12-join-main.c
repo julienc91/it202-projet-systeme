@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <assert.h>
 #include "thread.h"
+#include "../test/pthread_test.h"
 
 /* test du join du main par un fils.
  *
@@ -14,7 +15,7 @@
  * - thread_join() du main par un autre thread
  */
 
-thread_t thmain = NULL;
+thread_t thmain;
 
 static void * thfunc(void *dummy)
 {
