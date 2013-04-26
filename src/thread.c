@@ -156,7 +156,7 @@ void threads_destroy(void)
 	//~ free(return_t.uc_stack.ss_sp);
 	free(threadList.pthreads);
 	free(threadList.currentThreads);
-	free(threadList.mainThread);
+	//~ free(threadList.mainThread);
 
 	for (item = TAILQ_FIRST(&(threadList.list)); item != NULL; item = tmp_item)
 	{
@@ -389,15 +389,15 @@ extern int thread_yield(void)
 				}
 				pthread_mutex_unlock(&lock_list);
 
-				//~ if(tmp == threadList.mainThread)
-				//~ {
-					//~ fprintf(stderr, "\n\n");
-					//~ DEBUG("Fin du main")
-					//~ pthread_mutex_lock(&lock);
-					//~ tmp->state = DEAD;
-					//~ TAILQ_INSERT_TAIL(&(threadList.list_dead), tmp, entries);
-					//~ pthread_mutex_unlock(&lock);
-				//~ }
+				if(tmp == threadList.mainThread)
+				{
+					fprintf(stderr, "\n\n");
+					DEBUG("Fin du main")
+					pthread_mutex_lock(&lock_list);
+					tmp->state = DEAD;
+					TAILQ_INSERT_TAIL(&(threadList.list_dead), tmp, entries);
+					pthread_mutex_unlock(&lock_list);
+				}
 
 
 				if(yield_again)
