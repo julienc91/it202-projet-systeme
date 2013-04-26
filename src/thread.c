@@ -65,8 +65,12 @@ int get_cores(void)
 }
 
 //fonction appelée à la fin d'un thread, via uc_link
-void thread_return()
+void thread_return(){}
+
+//fonction appelée dans le contexte lors de la création d'un thread
+void stock_return(void * funcarg, void* (*func)())
 {
+	threadList.currentThread->retval = func(funcarg);
 	(threadList.currentThread)->state = DEAD;
 	if(threadList.currentThread->default_priority == threadList.max_priority)
 	  update_max_priority();
@@ -74,12 +78,6 @@ void thread_return()
 	TAILQ_INSERT_TAIL(&(threadList.list_dead), threadList.currentThread, entries);
 
 	thread_yield();
-}
-
-//fonction appelée dans le contexte lors de la création d'un thread
-void stock_return(void * funcarg, void* (*func)())
-{
-	threadList.currentThread->retval = func(funcarg);
 }
 
 //fonction appelée à la terminaison du programme pour libérer la mémoire
