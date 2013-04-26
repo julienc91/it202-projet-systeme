@@ -1,5 +1,5 @@
 CC=@gcc
-CFLAGS=-Wall -Wextra -g -Wno-unused-parameter -Wno-sign-compare -Isrc -Itest
+CFLAGS=-Wall -Wextra -g -Wno-unused-parameter -Wno-sign-compare -Isrc -Itest -O3
 LDFLAGS=-lm
 
 SOURCES = $(wildcard test/*.c)
