@@ -89,13 +89,38 @@ void *thread_pthread_handler(void * v)
 //~ 
 	//~ thread_yield();
 //~ }
+
 //fonction appelée dans le contexte lors de la création d'un thread
 void stock_return(void * funcarg, void* (*func)())
 {
 	if(get_id_thread() != -1)
 	{
-		//~ fprintf(stderr, "Arguments de stock_return (id, string): %ld, %s\n", get_id_thread(), (char*)funcarg);
+		pthread_mutex_lock(&lock_list);
+
+		fprintf(stderr, "Arguments de stock_return (id, string): %ld, %s\n", get_id_thread(), (char*)funcarg);
 		//~ printf("Arguments de stock_return (id, string): %ld, %s\n", get_id_thread(), (char*)funcarg);
+		
+				thread_t item = NULL;
+				int aux = 0, aux2;
+				TAILQ_FOREACH(item, &(threadList.list), entries)
+				{
+					aux ++;
+				}
+				
+				fprintf(stderr, "\nNOMBRE DE THREADS ACTIFS (LISTE): %d\n", aux);
+
+				for (aux2 = 0; aux2 < nb_cores; aux2++)
+				{
+					if(threadList.currentThreads[aux2] != NULL)
+					{
+						aux ++;
+					}
+				}
+				
+				fprintf(stderr, "NOMBRE DE THREADS ACTIFS (GLOBAL): %d\n\n", aux);
+				pthread_mutex_unlock(&lock_list);
+		
+		
 		threadList.currentThreads[get_id_thread()]->retval = func(funcarg);
 		
 		//Terminaison du thread courant
@@ -106,6 +131,13 @@ void stock_return(void * funcarg, void* (*func)())
 		pthread_mutex_unlock(&lock_list);
 		
 		thread_yield();
+			
+		//~ printf("DEBUG : Retval: %s  id_thread: %ld  state: %d \n", (char*) retval, get_id_thread(), (threadList.currentThreads[get_id_thread()])->state);
+		DEBUG("stock_return, goto label")
+
+		//Cette fonction ne doit pas terminer
+		label2:
+			goto label2;
 	}
 	else
 	{
@@ -274,6 +306,7 @@ void thread_init_function(void)
 				pthread_create(threadList.pthreads[i], NULL, thread_pthread_handler, (void*)i+2);
 			}
 			usleep(100);
+			//~ sleep(1);
 		}
 	}
 }
@@ -342,6 +375,27 @@ extern thread_t thread_self(void)
  */
 extern int thread_yield(void)
 {
+	//~ pthread_mutex_lock(&lock_list);
+	//~ thread_t item = NULL;
+	//~ int aux = 0, aux2;
+	//~ TAILQ_FOREACH(item, &(threadList.list), entries)
+	//~ {
+		//~ aux ++;
+	//~ }
+	//~ 
+	//~ fprintf(stderr, "\nNOMBRE DE THREADS ACTIFS (LISTE): %d\n", aux);
+//~ 
+	//~ for (aux2 = 0; aux2 < nb_cores; aux2++)
+	//~ {
+		//~ if(threadList.currentThreads[aux2] != NULL)
+		//~ {
+			//~ aux ++;
+		//~ }
+	//~ }
+	//~ 
+	//~ fprintf(stderr, "NOMBRE DE THREADS ACTIFS : %d\n\n", aux);
+	//~ pthread_mutex_unlock(&lock_list);
+
 	yield_begin:
 		thread_init_function();
 		thread_t tmp = NULL;
