@@ -74,7 +74,7 @@ void stock_return(void * funcarg, void* (*func)())
 	(threadList.currentThread)->state = DEAD;
 	if(threadList.currentThread->default_priority == threadList.max_priority)
 	  update_max_priority();
-	TAILQ_REMOVE(&(threadList.list), threadList.currentThread, entries);
+	//TAILQ_REMOVE(&(threadList.list), threadList.currentThread, entries);
 	TAILQ_INSERT_TAIL(&(threadList.list_dead), threadList.currentThread, entries);
 
 	thread_yield();
@@ -83,8 +83,11 @@ void stock_return(void * funcarg, void* (*func)())
 //fonction appelée à la terminaison du programme pour libérer la mémoire
 void threads_destroy()
 {
-	thread_t item, tmp_item;
+	thread_t item, tmp_item; 
+	threadList.currentThread->state=DEAD;
 	free(return_t.uc_stack.ss_sp);
+	//TAILQ_REMOVE(&(threadList.list), threadList.currentThread, entries);
+	int is_main = FALSE;
 
 	for (item = TAILQ_FIRST(&(threadList.list)); item != NULL; item = tmp_item)
 	{
@@ -103,7 +106,7 @@ void threads_destroy()
 		tmp_item = TAILQ_NEXT(item, entries);
 		/* Retire l'élément de la liste*/
 		TAILQ_REMOVE(&(threadList.list_sleeping), item, entries);
-
+		VALGRIND_STACK_DEREGISTER(item->valgrind_stackid);
 		/* Libère l'espace alloué */
 		free(item->context.uc_stack.ss_sp);
 		free(item);
@@ -115,9 +118,18 @@ void threads_destroy()
 		/* Retire l'élément de la liste*/
 		TAILQ_REMOVE(&(threadList.list_dead), item, entries);
 
+		if(item == threadList.currentThread){
+			is_main=TRUE;
+		}
+		VALGRIND_STACK_DEREGISTER(item->valgrind_stackid);
 		/* Libère l'espace alloué */
 		free(item->context.uc_stack.ss_sp);
 		free(item);
+	}
+	if(!is_main)
+	{
+		free(threadList.currentThread->context.uc_stack.ss_sp);
+		free(threadList.currentThread);
 	}
 }
 
@@ -161,7 +173,7 @@ void thread_init_function(void)
 		threadList.max_priority = 1;
 		threadList.mainThread = thread;
 		threadList.currentThread = thread;
-		TAILQ_INSERT_HEAD(&(threadList.list), thread, entries);
+		//TAILQ_INSERT_HEAD(&(threadList.list), thread, entries);
 
 
 		getcontext(&return_t);
@@ -212,7 +224,7 @@ extern int thread_create(thread_t *newthread, void *(*func)(void *), void *funca
 								 ((*newthread)->context).uc_stack.ss_sp + 
 								 ((*newthread)->context).uc_stack.ss_size);
 
-	((*newthread)->context).uc_link = &return_t;
+	((*newthread)->context).uc_link = NULL;
 	makecontext(&((*newthread)->context), (void (*)(void))*stock_return, 2, funcarg, (void (*)(void))func);
 
 	//Initialisation des attributs
@@ -273,7 +285,7 @@ extern int thread_yield(void)
 		    TAILQ_REMOVE(&(threadList.list), thread, entries);
 		    TAILQ_INSERT_TAIL(&(threadList.list), thread, entries);
 		  } while(thread->current_priority < 0);
-
+		  TAILQ_REMOVE(&(threadList.list), thread, entries);
 		}
 		else if (!TAILQ_EMPTY(&threadList.list_sleeping))// si il n'y a plus que des threads endormis
 		{
@@ -282,12 +294,16 @@ extern int thread_yield(void)
 			if(thread->default_priority > threadList.max_priority)
 			  threadList.max_priority = thread->default_priority;
 			TAILQ_REMOVE(&(threadList.list_sleeping), thread, entries);
-			TAILQ_INSERT_HEAD(&(threadList.list), thread, entries);
+			//TAILQ_INSERT_HEAD(&(threadList.list), thread, entries);
+			
 		}
-		else //si tous les threads sont morts ou endormis
+		else //si tous les threads sont morts
 		{
-			fprintf(stderr, "Fin : Plus de threads prets ou endormis\n");
+			//fprintf(stderr, "Fin : Plus de threads prets\n");
 			return 0;
+		}
+		if(tmp->state == READY){
+			TAILQ_INSERT_TAIL(&(threadList.list), tmp, entries);
 		}
 
 		//Màj du currentThread dans la threadList
@@ -330,7 +346,7 @@ extern int thread_join(thread_t thread, void **retval)
 				tmp->state = SLEEPING;
 				if(tmp->default_priority == threadList.max_priority)
 				  update_max_priority();
-				TAILQ_REMOVE(&(threadList.list), tmp, entries);
+				TAILQ_REMOVE(&(threadList.list), thread, entries);
 				TAILQ_INSERT_TAIL(&(threadList.list_sleeping), tmp, entries);
 
 				//Changement de contexte
@@ -341,7 +357,7 @@ extern int thread_join(thread_t thread, void **retval)
 				tmp->state = SLEEPING;
 				if(tmp->default_priority == threadList.max_priority)
 				  update_max_priority();
-				TAILQ_REMOVE(&(threadList.list), tmp, entries);
+				//TAILQ_REMOVE(&(threadList.list), tmp, entries);
 				TAILQ_INSERT_TAIL(&(threadList.list_sleeping), tmp, entries);
 				thread_yield();
 				break;
@@ -372,7 +388,7 @@ extern void thread_exit(void *retval)
 	if(threadList.currentThread->default_priority == threadList.max_priority)
 	  update_max_priority();
 
-	TAILQ_REMOVE(&(threadList.list), threadList.currentThread, entries);
+	//TAILQ_REMOVE(&(threadList.list), threadList.currentThread, entries);
 	TAILQ_INSERT_TAIL(&(threadList.list_dead), threadList.currentThread, entries);
 
 	thread_yield();

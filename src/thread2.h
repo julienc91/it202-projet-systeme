@@ -26,7 +26,6 @@ typedef struct thread_t_
   /* return value */
   void *retval;
   /* boolean */
-  int already_done;
   int valgrind_stackid;
   int default_priority;
   int current_priority;
@@ -42,8 +41,6 @@ typedef struct Threads
   TAILQ_HEAD(, thread_t_) list;
   TAILQ_HEAD(, thread_t_) list_sleeping;
   TAILQ_HEAD(, thread_t_) list_dead;
-
-  pthread_t *tab;
 
 } Threads;
 
