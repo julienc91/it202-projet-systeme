@@ -373,7 +373,7 @@ extern int thread_yield(void)
 		
 		#ifdef DEBUG_MODE
 		thread->nb_calls++;
-		fprintf(stderr, "Using thread %d (time %d) with priority: %d/%d\n", thread->id, thread->nb_calls, thread->current_priority, thread->default_priority);
+		//fprintf(stderr, "Using thread %d (time %d) with priority: %d/%d\n", thread->id, thread->nb_calls, thread->current_priority, thread->default_priority);
 		#endif
 		
 		//Changement de contexte
