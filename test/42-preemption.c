@@ -21,7 +21,7 @@ static void * thfunc(void *_nbyield)
   unsigned long nbyield = (unsigned long) _nbyield;
   int i = 0;
 
-  while(1) {  fprintf(stderr, "%d-%d\n", (int) nbyield, i++);}
+  while(1) {  if(i%10000==0) fprintf(stderr, "%d\n", i++);}
     
   return NULL;
 }
@@ -53,13 +53,14 @@ int main(int argc, char *argv[])
   }
 
   set_preemption_active(1);
-
-  for(i=0; i<nbth; i++) {
+  thread_yield();
+  thread_yield();
+  /*for(i=0; i<nbth; i++) {
     void *res;
     err = thread_join(ths[i], &res);
     assert(!err);
     assert(res == NULL);
-  }
+  }*/
 
   gettimeofday(&tv2, NULL);
   us = (tv2.tv_sec-tv1.tv_sec)*1000000+(tv2.tv_usec-tv1.tv_usec);

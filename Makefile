@@ -1,6 +1,6 @@
 CC=@gcc
 
-CFLAGS=-Wall -Wextra -g -Wno-unused-parameter -Wno-sign-compare -Isrc -Itest -DDEBUG_MODE -o3
+CFLAGS=-Wall -Wextra -g -Wno-unused-parameter -Wno-sign-compare -Isrc -Itest -DDEBUG_MODE -o3 
 LDFLAGS=-lm -lpthread
 
 PTHREAD ?= 0
