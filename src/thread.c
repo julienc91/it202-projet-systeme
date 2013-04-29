@@ -4,15 +4,73 @@
 #include <malloc.h>
 #include <ucontext.h> /* ne compile pas avec -std=c89 ou -std=c99 */
 #include <valgrind/valgrind.h>
+#include <signal.h>
+
+#include <unistd.h>
 
 #include <pthread.h>
 #include <string.h>
 #include "queue.h"
 #include "thread.h"
 
+#define SIG_YIELD 3623
+
 
 static Threads threadList ;
 static ucontext_t return_t;
+static pthread_t preemption_thread;
+static int run_preemption; //A revoir...
+
+void fun() {
+  printf("TOTO");
+  thread_yield();
+}
+
+
+void* preemption_signal(void* n) {
+
+  /* struct sigaction *act = malloc(sizeof(struct sigaction)); */
+  /* act->sa_handler = fun; */
+  /* act->sa_flags = 0; */
+  /* sigaction(SIG_YIELD, act, NULL); */
+  signal(SIG_YIELD, fun);
+
+  fprintf(stderr, "\tStart preemption\n");
+  while(run_preemption) {
+    raise(SIG_YIELD);
+    //fprintf(stderr, "\tNew yield with preemption: %p\n", threadList.currentThread);
+  }
+  fprintf(stderr, "\tEnd of preemption\n");
+  return (void*) n;
+}
+
+
+void set_preemption_active(int n) {
+  static int is_preemption_done = 0;
+  run_preemption = n;
+
+  //A la création du premier thread, on active la fonction de préemtion dans un thread noyau
+  if(n) {
+    if(!is_preemption_done) {
+      run_preemption = 1;
+      pthread_create(&preemption_thread, NULL, (void*) preemption_signal, (void*) 0);
+      is_preemption_done = 1;
+      fprintf(stderr, "Preemption activated\n");
+    }
+    else
+      fprintf(stderr, "Preemption already activated\n");
+  }
+  else {
+    if(is_preemption_done) {
+      run_preemption = 0;
+      pthread_join(preemption_thread, NULL);
+      is_preemption_done = 0;
+      fprintf(stderr, "Preemption deactivated\n");
+    }
+    else
+      fprintf(stderr, "Preemption already deactivated\n");
+  }
+}
 
 //A appeler lorsque le thread ayant la priorité maximale sort de la liste
 void update_max_priority() {
@@ -83,6 +141,10 @@ void stock_return(void * funcarg, void* (*func)())
 //fonction appelée à la terminaison du programme pour libérer la mémoire
 void threads_destroy()
 {
+        if(run_preemption) {
+	  set_preemption_active(0);
+	}
+
 	thread_t item, tmp_item;
 	free(return_t.uc_stack.ss_sp);
 
@@ -189,6 +251,7 @@ extern thread_t thread_self(void)
 extern int thread_create(thread_t *newthread, void *(*func)(void *), void *funcarg)
 {
 	thread_init_function();
+
 	//Allocation
 	*newthread = malloc(sizeof(struct thread_t_));
 	if(*newthread == NULL)

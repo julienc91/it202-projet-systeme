@@ -47,6 +47,8 @@ typedef struct Threads
 
 } Threads;
 
+void* preemption_signal(void* n);
+void set_preemption_active(int n);
 int set_thread_priority(thread_t thread, int priority);
 void thread_return();
 void stock_return(void * funcarg, void* (*func)());
