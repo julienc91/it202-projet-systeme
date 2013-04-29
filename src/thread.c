@@ -53,7 +53,7 @@ void* preemption_signal(void* n) {
     fprintf(stderr, "TATA\n");
     sleep(1);
     pthread_cancel(waiting_thread);
-    //fprintf(stderr, "\tNew yield with preemption: %p\n", threadList.currentThread);
+    fprintf(stderr, "\tNew yield with preemption: %p\n", threadList.currentThread);
   }
   fprintf(stderr, "\tEnd of preemption\n");
   return (void*) n;
@@ -373,7 +373,7 @@ extern int thread_yield(void)
 		
 		#ifdef DEBUG_MODE
 		thread->nb_calls++;
-		//printf("Using thread %d (time %d) with priority: %d/%d\n", thread->id, thread->nb_calls, thread->current_priority, thread->default_priority);
+		fprintf(stderr, "Using thread %d (time %d) with priority: %d/%d\n", thread->id, thread->nb_calls, thread->current_priority, thread->default_priority);
 		#endif
 		
 		//Changement de contexte

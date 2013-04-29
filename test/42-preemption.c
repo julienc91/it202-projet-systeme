@@ -2,6 +2,7 @@
 #include <assert.h>
 #include <stdlib.h>
 #include <sys/time.h>
+#include <unistd.h>
 #include "thread.h"
 #include "../test/pthread_test.h"
 
@@ -16,18 +17,25 @@
  * - thread_join() avec récupération de la valeur de retour
  */
 
-static void * thfunc(void *_nbyield)
+static void * thfunc(void *_id)
 {
-  unsigned long nbyield = (unsigned long) _nbyield;
+  unsigned long id = (unsigned long) _id;
   int i = 0;
 
-  while(1) {  if(i%10000==0) fprintf(stderr, "%d\n", i++);}
+  while(1) {
+    i++;
+    
+        //fprintf(stderr, "%ld-%d\n", id, i); 
+
+  }
     
   return NULL;
 }
 
 int main(int argc, char *argv[])
 {
+  set_preemption_active(1);
+
   int nbth, i, err;
   unsigned long nbyield;
   thread_t *ths;
@@ -51,17 +59,9 @@ int main(int argc, char *argv[])
     err = thread_create(&ths[i], thfunc, (void*) (nbyield+i));
     assert(!err);
   }
-
-  set_preemption_active(1);
-  thread_yield();
-  thread_yield();
-  /*for(i=0; i<nbth; i++) {
-    void *res;
-    err = thread_join(ths[i], &res);
-    assert(!err);
-    assert(res == NULL);
-  }*/
-
+  set_thread_priority(ths[1], 2);
+  sleep(50);
+  
   gettimeofday(&tv2, NULL);
   us = (tv2.tv_sec-tv1.tv_sec)*1000000+(tv2.tv_usec-tv1.tv_usec);
   printf("%ld yield avec %d threads: %ld us\n",
