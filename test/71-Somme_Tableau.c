@@ -69,11 +69,11 @@ int main(int argc, char * argv[]){
       i;
     thread_create(&tid[i], sum_init, (void *)(size_t)i);
   }
-
+  set_preemption_active(1);
   void * pt;
-  for (i=0; i < N; i++){
-    thread_join(tid[i], &pt);
-  }
+  //~for (i=0; i < N; i++){
+    //~thread_join(tid[i], &pt);
+  //~}
 
   printf("Total attendu:1048576\n");
   printf("Total des éléments du tableau: %d\n", res);
