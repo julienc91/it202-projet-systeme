@@ -13,19 +13,32 @@
 #include "queue.h"
 #include "thread.h"
 
-#define SIG_YIELD 3623
+#define SIG_YIELD SIGUSR1
 
 
 static Threads threadList ;
 static ucontext_t return_t;
 static pthread_t preemption_thread;
+static pthread_t waiting_thread;
 static int run_preemption; //A revoir...
 
 void fun() {
-  printf("TOTO");
+  fprintf(stderr, "TOTO\n");
   thread_yield();
+  fprintf(stderr, "TITI\n");
 }
 
+void* wait_signal(void* n) {
+  sigset_t sig;
+  sigemptyset(&sig);
+  sigaddset(&sig, SIG_YIELD);
+  int i;
+  signal(SIG_YIELD, fun);
+  fprintf(stderr, "Waiting for signal\n");
+  sigwait(&sig, &i);
+  fprintf(stderr, "Signal received\n");
+  return (void*) n;
+}
 
 void* preemption_signal(void* n) {
 
@@ -33,11 +46,13 @@ void* preemption_signal(void* n) {
   /* act->sa_handler = fun; */
   /* act->sa_flags = 0; */
   /* sigaction(SIG_YIELD, act, NULL); */
-  signal(SIG_YIELD, fun);
 
   fprintf(stderr, "\tStart preemption\n");
   while(run_preemption) {
-    raise(SIG_YIELD);
+    pthread_create(&waiting_thread, NULL, (void*) fun, (void*) 0);
+    fprintf(stderr, "TATA\n");
+    sleep(1);
+    pthread_cancel(waiting_thread);
     //fprintf(stderr, "\tNew yield with preemption: %p\n", threadList.currentThread);
   }
   fprintf(stderr, "\tEnd of preemption\n");

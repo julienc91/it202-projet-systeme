@@ -19,9 +19,9 @@
 static void * thfunc(void *_nbyield)
 {
   unsigned long nbyield = (unsigned long) _nbyield;
-  int i;
+  int i = 0;
 
-  while(1) {}
+  while(1) {  fprintf(stderr, "%d-%d\n", (int) nbyield, i++);}
     
   return NULL;
 }
@@ -48,7 +48,7 @@ int main(int argc, char *argv[])
   gettimeofday(&tv1, NULL);
 
   for(i=0; i<nbth; i++) {
-    err = thread_create(&ths[i], thfunc, (void*) nbyield);
+    err = thread_create(&ths[i], thfunc, (void*) (nbyield+i));
     assert(!err);
   }
 
