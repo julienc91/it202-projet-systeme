@@ -2,6 +2,8 @@
 #define __THREAD_H2__
 
 #include <ucontext.h>
+#include <pthread.h>
+
 #include "queue.h"
 
 #define TRUE 1
@@ -41,6 +43,8 @@ typedef struct Threads
   TAILQ_HEAD(, thread_t_) list;
   TAILQ_HEAD(, thread_t_) list_sleeping;
   TAILQ_HEAD(, thread_t_) list_dead;
+  /* Mutex pour protection de la liste */
+  pthread_spinlock_t spinlock;
 
 } Threads;
 

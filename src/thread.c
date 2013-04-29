@@ -74,8 +74,10 @@ void stock_return(void * funcarg, void* (*func)())
 	(threadList.currentThread)->state = DEAD;
 	if(threadList.currentThread->default_priority == threadList.max_priority)
 	  update_max_priority();
-	//TAILQ_REMOVE(&(threadList.list), threadList.currentThread, entries);
+	
+	pthread_spin_lock(&(threadList.spinlock));
 	TAILQ_INSERT_TAIL(&(threadList.list_dead), threadList.currentThread, entries);
+	pthread_spin_unlock(&(threadList.spinlock));
 
 	thread_yield();
 }
@@ -83,6 +85,8 @@ void stock_return(void * funcarg, void* (*func)())
 //fonction appelée à la terminaison du programme pour libérer la mémoire
 void threads_destroy()
 {
+	pthread_spin_destroy(&(threadList.spinlock));
+
 	thread_t item, tmp_item; 
 	threadList.currentThread->state=DEAD;
 	free(return_t.uc_stack.ss_sp);
@@ -142,6 +146,9 @@ void thread_init_function(void)
 		TAILQ_INIT(&threadList.list);
 		TAILQ_INIT(&threadList.list_sleeping);
 		TAILQ_INIT(&threadList.list_dead);
+
+		// initialisation du mutex
+		pthread_spin_init(&(threadList.spinlock),PTHREAD_PROCESS_PRIVATE);
 
 		atexit(threads_destroy);
 
@@ -240,7 +247,9 @@ extern int thread_create(thread_t *newthread, void *(*func)(void *), void *funca
 	(*newthread)->current_priority = DEFAULT_PRIORITY;
 
 	//Ajout en tête de la pile des threads
+	pthread_spin_lock(&(threadList.spinlock));
 	TAILQ_INSERT_TAIL(&(threadList.list), (*newthread), entries);
+	pthread_spin_unlock(&(threadList.spinlock));
 
 	getcontext(&(threadList.currentThread->context));
 
@@ -257,7 +266,7 @@ extern int thread_yield(void)
 	thread_t tmp = threadList.currentThread;
 	thread_t thread;
 	tmp->current_priority--;
-
+		pthread_spin_lock(&(threadList.spinlock));
 		//Recherche du premier thread prêt
 		if(!TAILQ_EMPTY(&threadList.list)) //si il y a des éléments dans la liste des threads prêts
 		{
@@ -300,12 +309,13 @@ extern int thread_yield(void)
 		else //si tous les threads sont morts
 		{
 			//fprintf(stderr, "Fin : Plus de threads prets\n");
+			pthread_spin_unlock(&(threadList.spinlock));
 			return 0;
 		}
 		if(tmp->state == READY){
 			TAILQ_INSERT_TAIL(&(threadList.list), tmp, entries);
 		}
-
+		pthread_spin_unlock(&(threadList.spinlock));
 		//Màj du currentThread dans la threadList
 		threadList.currentThread = thread;
 		
@@ -346,9 +356,10 @@ extern int thread_join(thread_t thread, void **retval)
 				tmp->state = SLEEPING;
 				if(tmp->default_priority == threadList.max_priority)
 				  update_max_priority();
+				pthread_spin_lock(&(threadList.spinlock));
 				TAILQ_REMOVE(&(threadList.list), thread, entries);
 				TAILQ_INSERT_TAIL(&(threadList.list_sleeping), tmp, entries);
-
+				pthread_spin_unlock(&(threadList.spinlock));
 				//Changement de contexte
 				swapcontext(&(tmp->context), &(threadList.currentThread->context));
 				break;
@@ -358,7 +369,9 @@ extern int thread_join(thread_t thread, void **retval)
 				if(tmp->default_priority == threadList.max_priority)
 				  update_max_priority();
 				//TAILQ_REMOVE(&(threadList.list), tmp, entries);
+				pthread_spin_lock(&(threadList.spinlock));
 				TAILQ_INSERT_TAIL(&(threadList.list_sleeping), tmp, entries);
+				pthread_spin_unlock(&(threadList.spinlock));
 				thread_yield();
 				break;
 
@@ -389,8 +402,10 @@ extern void thread_exit(void *retval)
 	  update_max_priority();
 
 	//TAILQ_REMOVE(&(threadList.list), threadList.currentThread, entries);
+	pthread_spin_lock(&(threadList.spinlock));
 	TAILQ_INSERT_TAIL(&(threadList.list_dead), threadList.currentThread, entries);
-
+	pthread_spin_unlock(&(threadList.spinlock));
+	
 	thread_yield();
 
 	//Cette fonction ne doit pas terminer
