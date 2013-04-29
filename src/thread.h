@@ -44,4 +44,12 @@ extern int thread_join(thread_t thread, void **retval);
  */
 extern void thread_exit(void *retval) __attribute__ ((__noreturn__));
 
+void *initPthread(void *k);
+
+int get_id_pthread();
+
+
+
+
+
 #endif /* __THREAD_H__ */

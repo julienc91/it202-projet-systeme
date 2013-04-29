@@ -39,7 +39,8 @@ typedef struct Threads
   int max_priority;
   int isInitialized;
   thread_t mainThread;
-  thread_t currentThread;
+  thread_t *currentThread;
+  pthread_t *pthreadTList;
   TAILQ_HEAD(, thread_t_) list;
   TAILQ_HEAD(, thread_t_) list_sleeping;
   TAILQ_HEAD(, thread_t_) list_dead;

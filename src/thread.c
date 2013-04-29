@@ -13,6 +13,8 @@
 
 static Threads threadList ;
 static ucontext_t return_t;
+static int nb_cores;
+static pthread_key_t key;
 
 //A appeler lorsque le thread ayant la priorité maximale sort de la liste
 void update_max_priority() {
@@ -70,13 +72,13 @@ void thread_return(){}
 //fonction appelée dans le contexte lors de la création d'un thread
 void stock_return(void * funcarg, void* (*func)())
 {
-	threadList.currentThread->retval = func(funcarg);
-	(threadList.currentThread)->state = DEAD;
-	if(threadList.currentThread->default_priority == threadList.max_priority)
+	threadList.currentThread[get_id_pthread()]->retval = func(funcarg);
+	(threadList.currentThread[get_id_pthread()])->state = DEAD;
+	if(threadList.currentThread[get_id_pthread()]->default_priority == threadList.max_priority)
 	  update_max_priority();
 	
 	pthread_spin_lock(&(threadList.spinlock));
-	TAILQ_INSERT_TAIL(&(threadList.list_dead), threadList.currentThread, entries);
+	TAILQ_INSERT_TAIL(&(threadList.list_dead), threadList.currentThread[get_id_pthread()], entries);
 	pthread_spin_unlock(&(threadList.spinlock));
 
 	thread_yield();
@@ -85,12 +87,19 @@ void stock_return(void * funcarg, void* (*func)())
 //fonction appelée à la terminaison du programme pour libérer la mémoire
 void threads_destroy()
 {
+	int i;
+	for(i=0; i<nb_cores-1; i++){
+		pthread_join(threadList.pthreadTList[i], NULL);
+	}
+
 	pthread_spin_destroy(&(threadList.spinlock));
+	pthread_key_delete(key);
+
 
 	thread_t item, tmp_item; 
-	threadList.currentThread->state=DEAD;
+	threadList.currentThread[get_id_pthread()]->state=DEAD;
 	free(return_t.uc_stack.ss_sp);
-	//TAILQ_REMOVE(&(threadList.list), threadList.currentThread, entries);
+	
 	int is_main = FALSE;
 
 	for (item = TAILQ_FIRST(&(threadList.list)); item != NULL; item = tmp_item)
@@ -122,7 +131,7 @@ void threads_destroy()
 		/* Retire l'élément de la liste*/
 		TAILQ_REMOVE(&(threadList.list_dead), item, entries);
 
-		if(item == threadList.currentThread){
+		if(item == threadList.currentThread[get_id_pthread()]){
 			is_main=TRUE;
 		}
 		VALGRIND_STACK_DEREGISTER(item->valgrind_stackid);
@@ -132,15 +141,33 @@ void threads_destroy()
 	}
 	if(!is_main)
 	{
-		free(threadList.currentThread->context.uc_stack.ss_sp);
-		free(threadList.currentThread);
+		free(threadList.currentThread[get_id_pthread()]->context.uc_stack.ss_sp);
+		free(threadList.currentThread[get_id_pthread()]);
 	}
+
+	free(threadList.currentThread);
+	free(threadList.pthreadTList);
+}
+
+void *initPthread(void *k){
+	pthread_setspecific(key , k);
+	thread_yield();
+}
+
+int get_id_pthread(){
+	void *tmp = pthread_getspecific(key);
+	if(tmp==NULL){return nb_cores-1;}
+	return (int) tmp;
 }
 
 void thread_init_function(void)
 {
 	if(!threadList.isInitialized)
 	{
+
+		pthread_key_create(&key,NULL);
+
+		nb_cores = get_cores();
 
 		threadList.isInitialized = TRUE;
 		TAILQ_INIT(&threadList.list);
@@ -179,9 +206,18 @@ void thread_init_function(void)
 
 		threadList.max_priority = 1;
 		threadList.mainThread = thread;
-		threadList.currentThread = thread;
-		//TAILQ_INSERT_HEAD(&(threadList.list), thread, entries);
+		threadList.currentThread = malloc(nb_cores*sizeof(thread_t));
+		int i;
+		for(i=0; i<nb_cores-1; i++){
+			threadList.currentThread[i]= NULL;
+		}
+		threadList.currentThread[nb_cores-1]= thread;
 
+
+		threadList.pthreadTList = malloc((nb_cores-1)*sizeof(pthread_t));
+		for(i=0; i<nb_cores-1; i++){
+			pthread_create(&(threadList.pthreadTList[i]), NULL, initPthread, (void *)i);
+		}
 
 		getcontext(&return_t);
 		return_t.uc_stack.ss_size = STACK_SIZE;
@@ -202,7 +238,7 @@ extern thread_t thread_self(void)
 {
 	thread_init_function();
 
-	return threadList.currentThread;
+	return threadList.currentThread[get_id_pthread()];
 }
 
 extern int thread_create(thread_t *newthread, void *(*func)(void *), void *funcarg)
@@ -251,7 +287,7 @@ extern int thread_create(thread_t *newthread, void *(*func)(void *), void *funca
 	TAILQ_INSERT_TAIL(&(threadList.list), (*newthread), entries);
 	pthread_spin_unlock(&(threadList.spinlock));
 
-	getcontext(&(threadList.currentThread->context));
+	getcontext(&(threadList.currentThread[get_id_pthread()]->context));
 
 	return 0;
 }
@@ -263,9 +299,11 @@ extern int thread_yield(void)
 {
 	thread_init_function();
 
-	thread_t tmp = threadList.currentThread;
+	thread_t tmp = threadList.currentThread[get_id_pthread()];
 	thread_t thread;
-	tmp->current_priority--;
+	if(tmp!=NULL){
+		tmp->current_priority --;
+	}
 		pthread_spin_lock(&(threadList.spinlock));
 		//Recherche du premier thread prêt
 		if(!TAILQ_EMPTY(&threadList.list)) //si il y a des éléments dans la liste des threads prêts
@@ -312,12 +350,12 @@ extern int thread_yield(void)
 			pthread_spin_unlock(&(threadList.spinlock));
 			return 0;
 		}
-		if(tmp->state == READY){
+		if(tmp!=NULL && tmp->state == READY){
 			TAILQ_INSERT_TAIL(&(threadList.list), tmp, entries);
 		}
 		pthread_spin_unlock(&(threadList.spinlock));
 		//Màj du currentThread dans la threadList
-		threadList.currentThread = thread;
+		threadList.currentThread[get_id_pthread()] = thread;
 		
 		#ifdef DEBUG_MODE
 		thread->nb_calls++;
@@ -325,7 +363,11 @@ extern int thread_yield(void)
 		#endif
 		
 		//Changement de contexte
-		swapcontext(&(tmp->context), &(threadList.currentThread->context));
+		if(tmp==NULL){
+			setcontext(&(threadList.currentThread[get_id_pthread()]->context));
+		}else{
+			swapcontext(&(tmp->context), &(threadList.currentThread[get_id_pthread()]->context));
+		}
 	return 0;
 }
 
@@ -349,8 +391,8 @@ extern int thread_join(thread_t thread, void **retval)
 		{
 			case(READY):
 				//Echange de currentThread
-				tmp = threadList.currentThread;
-				threadList.currentThread = thread;
+				tmp = threadList.currentThread[get_id_pthread()];
+				threadList.currentThread[get_id_pthread()] = thread;
 
 				//mise en sommeil de l'ancien thread courant
 				tmp->state = SLEEPING;
@@ -361,7 +403,7 @@ extern int thread_join(thread_t thread, void **retval)
 				TAILQ_INSERT_TAIL(&(threadList.list_sleeping), tmp, entries);
 				pthread_spin_unlock(&(threadList.spinlock));
 				//Changement de contexte
-				swapcontext(&(tmp->context), &(threadList.currentThread->context));
+				swapcontext(&(tmp->context), &(threadList.currentThread[get_id_pthread()]->context));
 				break;
 
 			case(SLEEPING):
@@ -394,18 +436,18 @@ extern void thread_exit(void *retval)
 {
 	thread_init_function();
 	//Affectation de la valeur de retour du thread courant à retval
-	threadList.currentThread->retval = retval;
+	threadList.currentThread[get_id_pthread()]->retval = retval;
 
 	//Terminaison du thread courant
-	(threadList.currentThread)->state = DEAD;
-	if(threadList.currentThread->default_priority == threadList.max_priority)
+	(threadList.currentThread[get_id_pthread()])->state = DEAD;
+	if(threadList.currentThread[get_id_pthread()]->default_priority == threadList.max_priority)
 	  update_max_priority();
 
 	//TAILQ_REMOVE(&(threadList.list), threadList.currentThread, entries);
 	pthread_spin_lock(&(threadList.spinlock));
-	TAILQ_INSERT_TAIL(&(threadList.list_dead), threadList.currentThread, entries);
+	TAILQ_INSERT_TAIL(&(threadList.list_dead), threadList.currentThread[get_id_pthread()], entries);
 	pthread_spin_unlock(&(threadList.spinlock));
-	
+
 	thread_yield();
 
 	//Cette fonction ne doit pas terminer
