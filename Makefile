@@ -1,6 +1,6 @@
 CC=@gcc
 
-CFLAGS=-Wall -Wextra -g -Wno-unused-parameter -Wno-sign-compare -Isrc -Itest -DDEBUG_MODE -o3 
+CFLAGS=-Wall -Wextra -g -Wno-unused-parameter -Wno-sign-compare -Isrc -Itest -DDEBUG_MODE -o3
 LDFLAGS=-lm -lpthread
 
 PTHREAD ?= 0
@@ -86,6 +86,10 @@ check:	thread.o $(OBJECTS)
 
 	@echo " * * * Testing '71-Somme_Tableau 64' * * *"
 	@bin/71-Somme_Tableau 64
+	@echo ""
+
+	@echo " * * * Testing '81-Tri_Fusion' * * *"
+	@bin/81-Tri_Fusion
 	@echo ""
 
 clean:
