@@ -70,12 +70,21 @@ int main(int argc, char * argv[]){
     thread_create(&tid[i], sum_init, (void *)(size_t)i);
   }
 
+  set_preemption_active(1);
+
   void * pt;
   for (i=0; i < N; i++){
     thread_join(tid[i], &pt);
   }
 
+#ifdef DEBUG_MODE
+  for(i=0; i<N; i++){
+    printf("%d: %d calls\n", i+1, tid[i]->nb_calls);
+  }
+#endif
+
   printf("Total attendu:1048576\n");
+  //printf("Total attendu:16777216\n");
   printf("Total des éléments du tableau: %d\n", res);
   return EXIT_SUCCESS;
 }

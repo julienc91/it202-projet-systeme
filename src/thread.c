@@ -23,9 +23,9 @@ static pthread_t waiting_thread;
 static int run_preemption; //A revoir...
 
 void fun() {
-  fprintf(stderr, "TOTO\n");
+  //fprintf(stderr, "TOTO\n");
   thread_yield();
-  fprintf(stderr, "TITI\n");
+  //fprintf(stderr, "TITI\n");
 }
 
 void* wait_signal(void* n) {
@@ -50,10 +50,10 @@ void* preemption_signal(void* n) {
   fprintf(stderr, "\tStart preemption\n");
   while(run_preemption) {
     pthread_create(&waiting_thread, NULL, (void*) fun, (void*) 0);
-    fprintf(stderr, "TATA\n");
-    sleep(1);
+    //fprintf(stderr, "TATA\n");
+    usleep(100);
     pthread_cancel(waiting_thread);
-    fprintf(stderr, "\tNew yield with preemption: %p\n", threadList.currentThread);
+    //fprintf(stderr, "\tNew yield with preemption: %p\n", threadList.currentThread);
   }
   fprintf(stderr, "\tEnd of preemption\n");
   return (void*) n;
@@ -287,7 +287,7 @@ extern int thread_create(thread_t *newthread, void *(*func)(void *), void *funca
 	}
 
 	(*newthread)->valgrind_stackid = VALGRIND_STACK_REGISTER(((*newthread)->context).uc_stack.ss_sp,
-								 ((*newthread)->context).uc_stack.ss_sp + 
+								 ((*newthread)->context).uc_stack.ss_sp +
 								 ((*newthread)->context).uc_stack.ss_size);
 
 	((*newthread)->context).uc_link = &return_t;
@@ -347,7 +347,7 @@ extern int thread_yield(void)
 		    thread = TAILQ_NEXT(thread, entries);
 		    }*/
 		    //si le thread courant est le seul thread prêt, on continue l'exécution
-		    
+
 		    TAILQ_REMOVE(&(threadList.list), thread, entries);
 		    TAILQ_INSERT_TAIL(&(threadList.list), thread, entries);
 		  } while(thread->current_priority < 0);
@@ -370,12 +370,12 @@ extern int thread_yield(void)
 
 		//Màj du currentThread dans la threadList
 		threadList.currentThread = thread;
-		
+
 		#ifdef DEBUG_MODE
 		thread->nb_calls++;
 		//fprintf(stderr, "Using thread %d (time %d) with priority: %d/%d\n", thread->id, thread->nb_calls, thread->current_priority, thread->default_priority);
 		#endif
-		
+
 		//Changement de contexte
 		swapcontext(&(tmp->context), &(threadList.currentThread->context));
 	return 0;
@@ -430,10 +430,10 @@ extern int thread_join(thread_t thread, void **retval)
 	}
 
 	if (retval == NULL)
-	{	
+	{
 		return 0;
 	}
-	
+
 	*retval = thread->retval;
 
 	return 0;
