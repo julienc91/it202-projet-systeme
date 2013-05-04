@@ -6,7 +6,7 @@
 
 #include "thread.h"
 
-int N = 128;
+int N = 64;
 int * tab_pt;
 int j = 2;          //taille des sous tableaux
 int k;      //nombre des sous tableaux
@@ -85,14 +85,14 @@ void * tri_lineaire(void * id){
 
     tri_lin_rec((int)id, j, j, tab_tmp);
     //printf("tab_tmp:\n");
-    for (i = 0; i < 2 * j; i++){
-        printf("%d,", tab_tmp[i]);
-    }
-    printf("\n");
+    //~for (i = 0; i < 2 * j; i++){
+        //~printf("%d,", tab_tmp[i]);
+    //~}
+    //~printf("\n");
     for (i = 0; i < 2 * j; i++){
         tab_pt[(int)id * 2 * j + i] = tab_tmp[i];
     }
-    print_tableau();
+    //print_tableau();
 
     pthread_mutex_lock(&mut);
     wait++;
@@ -103,7 +103,7 @@ void * tri_lineaire(void * id){
 
 int fusion(){
     int i;
-    print_tableau();
+    //print_tableau();
     thread_t tid[N];
     k = N;
 
@@ -157,13 +157,12 @@ int main(int argc, char * argv[]){
 
     int i = 0;
 
-    //~if(argc != 2){
-        //~printf("mauvais nombre d'arguments");
-        //~return EXIT_FAILURE;
-    //~}
-
-    //~N = atoi(argv[1]);
-
+    if(argc != 2){
+        printf("Pas d'arguments, nombre maximal de thread par défault:64\n");
+    }
+    else{
+    N = atoi(argv[1]);
+    }
     i =N;
 
     while(i != 1 && i != 2){
@@ -195,9 +194,7 @@ int main(int argc, char * argv[]){
 
     printf("Tableau trié:\n");
 
-    for(i = 0; i < N * 2; i++){
-        printf("%d,", tab_pt[i]);
-    }
+    print_tableau();
     printf("\n");
 
 

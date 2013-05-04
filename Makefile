@@ -88,6 +88,10 @@ check:	thread.o $(OBJECTS)
 	@bin/71-Somme_Tableau 64
 	@echo ""
 
+	@echo " * * * Testing '81-Tri_Fusion' * * *"
+	@bin/81-Tri_Fusion
+	@echo ""
+
 clean:
 	@rm -f $(OBJECTS)
 	@rm -f bin/*.o
