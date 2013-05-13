@@ -49,11 +49,11 @@ void* preemption_signal(void* n) {
 
   fprintf(stderr, "\tStart preemption\n");
   while(run_preemption) {
-    pthread_create(&waiting_thread, NULL, (void*) fun, (void*) 0);
-    //fprintf(stderr, "TATA\n");
-    usleep(100);
-    pthread_cancel(waiting_thread);
-    //fprintf(stderr, "\tNew yield with preemption: %p\n", threadList.currentThread);
+        fprintf(stderr, "[THREAD %d] Preemption\n", threadList.currentThread->id);
+        pthread_create(&waiting_thread, NULL, (void*) fun, (void*) 0);
+        usleep(100);
+        //~ pthread_exit();
+        //fprintf(stderr, "\tNew yield with preemption: %p\n", threadList.currentThread);
   }
   fprintf(stderr, "\tEnd of preemption\n");
   return (void*) n;
@@ -307,7 +307,7 @@ extern int thread_create(thread_t *newthread, void *(*func)(void *), void *funca
 
 	//Ajout en tête de la pile des threads
 	TAILQ_INSERT_TAIL(&(threadList.list), (*newthread), entries);
-
+    
 	getcontext(&(threadList.currentThread->context));
 
 	return 0;
@@ -373,7 +373,7 @@ extern int thread_yield(void)
 
 		#ifdef DEBUG_MODE
 		thread->nb_calls++;
-		//fprintf(stderr, "Using thread %d (time %d) with priority: %d/%d\n", thread->id, thread->nb_calls, thread->current_priority, thread->default_priority);
+		fprintf(stderr, "Using thread %d (time %d) with priority: %d/%d\n", thread->id, thread->nb_calls, thread->current_priority, thread->default_priority);
 		#endif
 
 		//Changement de contexte
@@ -408,7 +408,7 @@ extern int thread_join(thread_t thread, void **retval)
 				tmp->state = SLEEPING;
 				if(tmp->default_priority == threadList.max_priority)
 				  update_max_priority();
-				TAILQ_REMOVE(&(threadList.list), tmp, entries);
+				//~ TAILQ_REMOVE(&(threadList.list), tmp, entries);
 				TAILQ_INSERT_TAIL(&(threadList.list_sleeping), tmp, entries);
 
 				//Changement de contexte

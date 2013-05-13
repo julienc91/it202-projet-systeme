@@ -19,14 +19,13 @@
 
 static void * thfunc(void *_id)
 {
-  unsigned long id = (unsigned long) _id;
+  int id = (size_t) _id;
   int i = 0;
 
   while(1) {
     i++;
     
-        //fprintf(stderr, "%ld-%d\n", id, i); 
-
+    fprintf(stderr, "[%2d] %d\n", id, i);
   }
     
   return NULL;
@@ -37,18 +36,16 @@ int main(int argc, char *argv[])
   set_preemption_active(1);
 
   int nbth, i, err;
-  unsigned long nbyield;
   thread_t *ths;
   struct timeval tv1, tv2;
   unsigned long us;
 
-  if (argc < 3) {
-    printf("arguments manquants: nombre de threads\n");
+  if (argc != 2) {
+    printf("Usage: <nb threads>\n");
     return -1;
   }
 
   nbth = atoi(argv[1]);
-  nbyield = atoi(argv[2]);
 
   ths = malloc(nbth * sizeof(thread_t));
   assert(ths);
@@ -56,7 +53,7 @@ int main(int argc, char *argv[])
   gettimeofday(&tv1, NULL);
 
   for(i=0; i<nbth; i++) {
-    err = thread_create(&ths[i], thfunc, (void*) (nbyield+i));
+    err = thread_create(&ths[i], thfunc, (void*)(size_t)(i));
     assert(!err);
   }
   set_thread_priority(ths[1], 2);
@@ -64,8 +61,7 @@ int main(int argc, char *argv[])
   
   gettimeofday(&tv2, NULL);
   us = (tv2.tv_sec-tv1.tv_sec)*1000000+(tv2.tv_usec-tv1.tv_usec);
-  printf("%ld yield avec %d threads: %ld us\n",
-	 nbyield, nbth, us);
+  printf("yield avec %d threads: %ld us\n", nbth, us);
 
   #ifdef DEBUG_MODE
   for(i=0; i<nbth; i++) {
