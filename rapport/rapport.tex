@@ -121,6 +121,30 @@ Comme évoqué dans le rapport précédent, le système de priorités mis en pla
 
 \section{Multithread}
 
+La section suivante expose l'implémentation faite des threads noyaux pour exécuter simultanément les threads utilisateurs.
+
+\subsection{Réflexion et implémentation}
+
+De manière simplifiée, au lieu d'un seul thread noyau, un tableau de threads noyaux sera utilisé, et chaque fois qu'un yield sera fait sur l'un des threads noyaux, le thread en tête de liste des threads prêts sera chargé. Derrière ce principe simple se cachent néanmoins des problèmes à résoudre.\\
+
+Un changement a dû être opéré avant même de commencer la gestion multithread. Dans une première implémentation, le thread courant était stockés dans le champ \texttt{currentThread} de la structure \texttt{Threads} mais était aussi laissé en tête de la liste des thrads prêts. Ceci devient impossible lorsqu'il y a plusieurs threads courants simultanément. Ainsi lorsqu'un thread est chargé par un thread noyau, il est maintenant retiré de la liste des threads prêts.
+
+Le second point a changé avant de pouvoir réellement commencer les multithreads est la protection des données. Pour éviter par exemple qu'un thread utilisateur soit attribué à deux threads noyaux en même temps, les accés à la liste des threads doivent être gérés. Ainsi les sections critiques ont été identifiées et encadrés par des verrouillages et déverrouillages de spinlocks. Ce sont toutes les zones du codes dans lesquelles sont faits des tests sur les listes de threads ou des modifications sur ces listes.\\
+
+Concernant la gestion du multithreading, dans la structure \texttt{Threads}, le champ \texttt{currentThread} n'est plus de type \texttt{thread\_t} mais de type \texttt{thread\_t *}. Le champ \texttt{pthread\_t *pthreadTList} y a été ajouté : ce tableau stockera les threads noyaux. On remarque qu'on utilise la bibliothèque \texttt{pthread} pour les threads noyaux et les verrous.
+
+Le tableau des threads noyaux est de taille le nombre de coeurs de la machine. Ce nombre est lu dans le fichier \texttt{/proc/cpuinfo} par la fonction \texttt{get\_cores}.
+
+
+\iffalse
+Initialisation
+thread Yield
+
+Utilisation d'un entier pour identifier les threads avec setspecific et getspecific
+\fi
+
+\subsection{Tests et problèmes}
+
 
 \section*{Conclusion} %TODO
 %tests, valgrind, réponse au sujet, code propre
