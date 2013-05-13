@@ -25,10 +25,10 @@ void * tri_2_a_2(void * id){
 
     int tmp=0;
 
-    if(tab_pt[(int)id * 2] > tab_pt[(int)id * 2 +1]){
-        tmp = tab_pt[(int)id * 2];
-        tab_pt[(int)id * 2] = tab_pt[(int)id * 2 + 1];
-        tab_pt[(int)id * 2 + 1] = tmp;
+    if(tab_pt[(size_t)id * 2] > tab_pt[(size_t)id * 2 +1]){
+        tmp = tab_pt[(size_t)id * 2];
+        tab_pt[(size_t)id * 2] = tab_pt[(size_t)id * 2 + 1];
+        tab_pt[(size_t)id * 2 + 1] = tmp;
     }
 
     return (void *) &tab_pt;
@@ -83,14 +83,14 @@ void * tri_lineaire(void * id){
         tab_tmp[i] = 0;
     }
 
-    tri_lin_rec((int)id, j, j, tab_tmp);
+    tri_lin_rec((size_t)id, j, j, tab_tmp);
     //printf("tab_tmp:\n");
     //~for (i = 0; i < 2 * j; i++){
         //~printf("%d,", tab_tmp[i]);
     //~}
     //~printf("\n");
     for (i = 0; i < 2 * j; i++){
-        tab_pt[(int)id * 2 * j + i] = tab_tmp[i];
+        tab_pt[(size_t)id * 2 * j + i] = tab_tmp[i];
     }
     //print_tableau();
 
@@ -111,7 +111,7 @@ int fusion(){
         wait = 0;
 
         for(i = 0; i < (k / 2); i++){
-            thread_create(&tid[i], tri_lineaire, (void *)i);
+	  thread_create(&tid[i], tri_lineaire, (void *)(size_t)i);
         }
 
         for(i = 0; i < (k / 2); i++){
@@ -140,8 +140,8 @@ int tri_fusion_parallel(void){
     void * pt;
 
     for(i = 0 ; i < N; i++){
-        tid[i] = (thread_t )i;
-        thread_create(&tid[i], tri_2_a_2, (void *) i);
+      tid[i] = (thread_t)(size_t)i;
+      thread_create(&tid[i], tri_2_a_2, (void *)(size_t)i);
     }
 
     for(i = 0; i < N; i++)
