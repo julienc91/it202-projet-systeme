@@ -58,6 +58,9 @@ int get_cores(void);
 void debug_priority();
 void update_max_priority();
 
+void *initPthread(void *k);
+
+unsigned long get_id_pthread();
 
 
 #endif /* __THREAD_H2__ */

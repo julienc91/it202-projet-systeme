@@ -152,12 +152,16 @@ void threads_destroy()
 void *initPthread(void *k){
 	pthread_setspecific(key , k);
 	thread_yield();
+	return k;	
 }
 
-int get_id_pthread(){
+unsigned long get_id_pthread(){
 	void *tmp = pthread_getspecific(key);
-	if(tmp==NULL){return nb_cores-1;}
-	return (int) tmp;
+	if(tmp == NULL)
+		{
+			return nb_cores-1;
+		}
+	return (unsigned long) tmp;
 }
 
 void thread_init_function(void)
@@ -207,7 +211,7 @@ void thread_init_function(void)
 		threadList.max_priority = 1;
 		threadList.mainThread = thread;
 		threadList.currentThread = malloc(nb_cores*sizeof(thread_t));
-		int i;
+		unsigned long i;
 		for(i=0; i<nb_cores-1; i++){
 			threadList.currentThread[i]= NULL;
 		}
@@ -348,9 +352,12 @@ extern int thread_yield(void)
 		{
 			//fprintf(stderr, "Fin : Plus de threads prets\n");
 			pthread_spin_unlock(&(threadList.spinlock));
+			
+			//~ for (i = 0; i <
 			return 0;
 		}
-		if(tmp!=NULL && tmp->state == READY){
+		if(tmp!=NULL && tmp->state == READY)
+		{
 			TAILQ_INSERT_TAIL(&(threadList.list), tmp, entries);
 		}
 		pthread_spin_unlock(&(threadList.spinlock));
