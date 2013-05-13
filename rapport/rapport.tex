@@ -108,15 +108,31 @@ Comme évoqué dans le rapport précédent, le système de priorités mis en pla
  			thread$\rightarrow$current\_priority = thread$\rightarrow$default\_priority\;
  		}
     \tcc{This thread can be executed}
- 	\If{thread$\rightarrow$current\_priority > 0} {
+ 	\eIf{thread$\rightarrow$current\_priority > 0} {
  		continue = false\;
+ 	}{
+ 	\tcc{Otherwise, another try with the next one}
+ 	thread = thread\_next(thread)\;
  	}
   }
   execute(thread)\;
 \end{algorithm}
-\caption{Première version des priorités}
+\caption{Ordonnancement avec la première version des priorités}
 \label{priority1}
 \end{figure}
+
+Néanmoins, en restreignant l'intervalle possible des priorités sur un petit intervalle, cet algorithme s'exécute avec une complexité plutôt satisfaisante:
+\begin{itemize}
+ \item En temps constant si tous les threads ont la même priorité
+ \item En temps constant si tous les threads ont une priorité courante positive
+ \item En temps linéaire dans le pire des cas (parcours de la liste entière pour finalement retomber sur le thread qu'on venait de quitter)
+\end{itemize}
+
+La seule contrainte est de devoir garder une valeur correcte pour la priorité maximale dans la liste des threads, ce qui impose un parcours complet de la liste dès lors qu'un thread dont la priorité est égale à la priorité maximale sort de la liste (qu'il soit mort ou endormi). L'ajout d'un thread dont la priorité est plus importante que les autres n'implique pas de nouveau parcours.\\
+
+Le nouveau système mis en place améliore encore cette complexité, puisqu'elle assure un \textit{yield} en temps constant. Plutôt que de se baser sur le nombre de \textit{yields} sur un thread donné, il suffit de travailler sur la durée d'exécution de ce même thread entre deux \textit{yields}: plus un thread est prioritaire, plus il aura droit à une durée élevée pour s'exécuter avant le prochain ordonnancement.
+
+La raison pour laquelle cette version n'a pas été celle qui a été initialement choisie est que la première version mise en place ne nécessitait pas de préemption, contrairement à la seconde. En effet, dans cette nouvelle situation, l'ordonnanceur doit mesurer la durée d'exécution de chaque thread pour demander le \textit{yield} au moment adéquat.
 
 
 \section{Multithread}
