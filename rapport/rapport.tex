@@ -8,6 +8,7 @@
 \usepackage{tikz}
 \usepackage{relsize}
 \usepackage{color}
+\usepackage[boxed]{algorithm2e}
 \usepackage[hidelinks]{hyperref}
 \definecolor{dkgreen}{rgb}{0,0.6,0}
 \definecolor{gray}{rgb}{0.5,0.5,0.5}
@@ -87,6 +88,36 @@ Ce rapport final pour le projet de réseau IT202 fait suite au rapport interméd
 Afin de mieux intégrer le système de priorités élaboré précédemment, il fallait mettre en place une gestion de la préemption. En effet, sans préemption, les priorités n'opèrent que lorsque le thread courant \textit{choisit} de passer la main. On peut par exemple imaginer un thread non prioritaire s'exécutant sans jamais appeler au \textit{yield}, et s'exécuterait jusqu'à sa terminaison.
 
 La préemption pallie ce problème en offrant, en quelque sorte, un \textit{arbitre} qui force le passage de main. Ainsi, la préemption rend le système de priorités utile dans tous les cas, et non plus seulement dans le cadre d'un code coopératif (\textit{ie} dont les fonctions font des \textit{yields} de leur propre chef et de manière régulière).
+
+\subsection{Les bases de l'implémentation}
+
+L'idée de base consiste simplement à voir l'ordonnanceur comme un superviseur s'exécutant en parallèle des threads. Pour permettre cette exécution simultanée, la mise en place s'est faite à l'aide d'un thread noyau (bibliothèque \texttt{pthread}) propre à l'ordonnanceur, tandis que les threads utilisateurs étaient exécutés depuis le thread noyau principal.
+
+\subsubsection*{La remise à plat du système de priorités}
+
+Comme évoqué dans le rapport précédent, le système de priorités mis en place s'avérait être complexe dans certains cas, notamment lorsque la différence de priorité entre deux threads était trop importante. L'algorithme donné en figure \ref{priority1} correspond à cette première version.
+
+\begin{figure}[H]
+\begin{algorithm}[H]
+ thread = thread\_next(thread\_list$\rightarrow$current\_thread)\;
+ continue = true\;
+ \While{continue} {
+ 	thread$\rightarrow$current\_priority = thread$\rightarrow$current\_priority - 1\;
+ 	\tcc{Reset priority}
+ 	\If{thread$\rightarrow$current\_priority == thread$\rightarrow$default\_priority - thread\_list$\rightarrow$max\_priority} {
+ 			thread$\rightarrow$current\_priority = thread$\rightarrow$default\_priority\;
+ 		}
+    \tcc{This thread can be executed}
+ 	\If{thread$\rightarrow$current\_priority > 0} {
+ 		continue = false\;
+ 	}
+  }
+  execute(thread)\;
+\end{algorithm}
+\caption{Première version des priorités}
+\label{priority1}
+\end{figure}
+
 
 \section{Multithread}
 
