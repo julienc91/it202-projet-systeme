@@ -1,0 +1,90 @@
+\documentclass[a4paper,11pt]{article}
+
+\usepackage{lscape}
+\usepackage{geometry}
+\usepackage[utf8]{inputenc}
+\usepackage[francais]{babel}
+\usepackage[T1]{fontenc}
+\usepackage{gantt}
+\usepackage{tikz}
+\usepackage{tikz-uml}
+\usepackage{relsize}
+\usepackage{color}
+\usepackage[hidelinks]{hyperref}
+\definecolor{dkgreen}{rgb}{0,0.6,0}
+\definecolor{gray}{rgb}{0.5,0.5,0.5}
+\definecolor{mauve}{rgb}{0.58,0,0.82}
+
+\usepackage{listings}
+\usepackage{float}
+%\usepackage{kpfonts}
+
+\usepackage{graphicx}
+%\usepackage{rotating}
+
+\lstset{
+  language=C++,
+  basicstyle=\footnotesize,
+  backgroundcolor=\color{white},
+  keywordstyle=\color{red},
+  commentstyle=\color{dkgreen},
+  stringstyle=\color{mauve},
+  numberstyle=\color{red},
+  morekeywords={string},
+  frame=BL,
+  aboveskip=1em,
+  belowskip=2em,
+}
+\lstset{
+  literate={ù}{{\`u}}1
+  {é}{{\'e}}1
+  {è}{{\'e}}1
+  {à}{{\`a}}1
+}
+
+
+\lstdefinelanguage{tikzuml}{language=[LaTeX]TeX, classoffset=0, morekeywords={umlbasiccomponent, umlprovidedinterface, umlrequiredinterface, umldelegateconnector, umlassemblyconnector, umlVHVassemblyconnector, umlHVHassemblyconnector, umlnote, umlusecase, umlactor, umlinherit, umlassoc, umlVHextend, umlinclude, umlstateinitial, umlbasicstate, umltrans, umlstatefinal, umlVHtrans, umlHVtrans, umldatabase, umlmulti, umlobject, umlfpart, umlcreatecall, umlclass, umlvirt, umlunicompo, umlimport, umlaggreg}, classoffset=1, morekeywords={umlcomponent, umlsystem, umlstate, umlseqdiag, umlcall, umlcallself, umlfragment, umlpackage}, classoffset=0,  sensitive=true, morecomment=[l]{\%}}
+
+\geometry{margin=2.5cm}
+\geometry{headheight=15pt}
+
+\usepackage{fancyhdr}
+\usepackage{fancyvrb}
+\usepackage{float}
+\usepackage[footnote,smaller]{acronym}
+
+\pagestyle{fancy}
+\rhead{IT202 - Projet de Système d'Exploitation}
+
+% \acrodef{LABRI}{Laboratoire Bordelais de Recherche en Informatique}
+
+\begin{document}
+
+\begin{titlepage}
+  \begin{center}
+
+    \textsc{IT202 - Projet de Système d'Exploitation}\\[2cm]
+    \textsc{\large Rapport Final}\\[3cm]
+    Maxime \textsc{Bellier} \ \ \ Louis \textsc{Boucherie}\ \ \ Jean-Michaël \textsc{Celerier}\\
+    Julien \textsc{Chaumont} \ \ \ Bazire \textsc{Houssin} \ \ \ Sylvain \textsc{Vaglica}\\[1cm]
+    \textsc{Groupe 3}\\[1.5cm]
+    \textsc{\large 23/05/2013 }\\[1.5cm] %TODO
+    \includegraphics[width=8cm]{logo.png}
+
+  \end{center}
+  \vspace{3cm}
+
+\end{titlepage}
+
+\clearpage
+
+\section*{Introduction}
+
+Ce rapport final pour le projet de réseau IT202 fait suite au rapport intermédiaire délivré le 23 avril dernier.
+
+
+\section*{Conclusion} %TODO
+%tests, valgrind, réponse au sujet, code propre
+
+
+\end{document}
