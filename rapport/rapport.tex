@@ -5,9 +5,7 @@
 \usepackage[utf8]{inputenc}
 \usepackage[francais]{babel}
 \usepackage[T1]{fontenc}
-\usepackage{gantt}
 \usepackage{tikz}
-\usepackage{tikz-uml}
 \usepackage{relsize}
 \usepackage{color}
 \usepackage[hidelinks]{hyperref}
@@ -83,6 +81,12 @@
 Ce rapport final pour le projet de réseau IT202 fait suite au rapport intermédiaire délivré le 23 avril dernier.
 
 \section{Préemption}
+
+\subsection{Principe et utilité}
+
+Afin de mieux intégrer le système de priorités élaboré précédemment, il fallait mettre en place une gestion de la préemption. En effet, sans préemption, les priorités n'opèrent que lorsque le thread courant \textit{choisit} de passer la main. On peut par exemple imaginer un thread non prioritaire s'exécutant sans jamais appeler au \textit{yield}, et s'exécuterait jusqu'à sa terminaison.
+
+La préemption pallie ce problème en offrant, en quelque sorte, un \textit{arbitre} qui force le passage de main. Ainsi, la préemption rend le système de priorités utile dans tous les cas, et non plus seulement dans le cadre d'un code coopératif (\textit{ie} dont les fonctions font des \textit{yields} de leur propre chef et de manière régulière).
 
 \section{Multithread}
 
