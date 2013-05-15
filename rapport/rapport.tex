@@ -79,7 +79,117 @@
 
 \section*{Introduction}
 
-Ce rapport final pour le projet de réseau IT202 fait suite au rapport intermédiaire délivré le 23 avril dernier.
+Le projet de Système d'Exploitation consiste en la réalisation d'une bibliothèque de threads. Les tests ayant déjà été implémentés et fixés en amont, il s'agit d'un développement par les tests.
+
+
+%objectifs
+
+\section{Définition des structures de données}
+
+L'une des premières étapes aura été de définir les structures de données à adopter à partir des résultats attendus et de l'implémentation des tests. Cette première partie décrira de manière détaillée les structures choisies.
+
+\subsection{Le type \texttt{thread\_t}}
+
+Le type \texttt{thread\_t} est en fait à la base de notre implémentation: cette structure représente un thread en mémoire. Sa définition est donnée en figure \ref{threadt}.
+
+\begin{figure}[H]
+\begin{lstlisting}
+typedef enum {READY, SLEEPING, DEAD} STATE;
+
+typedef struct thread_t_
+{
+  STATE state;
+  ucontext_t context;
+  void *retval;
+  int valgrind_stackid;
+  TAILQ_ENTRY(thread_t_) entries;
+} *thread_t;
+\end{lstlisting}
+\caption{Implémentation de \texttt{thread\_t}}
+\label{threadt}
+\end{figure}
+
+Ses attributs ont chacun leur utilité:
+\begin{itemize}
+  \item \texttt{state}: état du thread, à savoir \emph{prêt à l'exécution}, \emph{endormi}, ou \emph{mort};
+  \item \texttt{context}: contexte d'exécution du thread, géré à l'aide des fonctions de la bibliothèque standard \texttt{getcontext}, \texttt{setcontext}, \texttt{makecontext} et \texttt{swapcontext}, déclarées dans \texttt{ucontext.h};
+  \item \texttt{retval}: pointeur vers la valeur de retour de la fonction exécutée dans le thread;
+  \item \texttt{valgrind\_stackid}: permet à l'utilitaire \textit{Valgrind} de mieux gérer la détection de problèmes de mémoire dans les piles;
+  \item \texttt{entries}: structure contenant des pointeurs vers les threads suivant et précédent. Il s'agit en fait d'une liste doublement chaînée utilisant l'implémentation de \textit{Queue BSD}\footnote{http://linux.die.net/include/sys/queue.h}.
+\end{itemize}
+
+\subsection{Le type \texttt{Threads}}
+
+Le type \texttt{Threads} a été mis en place afin de gérer différents threads au cours de l'exécution d'un programme. Il s'agit en fait d'une file contenant les différents threads créés par le programmeur, ce qui permet de passer aisément d'un thread à un autre.
+
+Comme évoqué précédemment, c'est l'implémentation de \textit{Queue BSD} qui est utilisée ici. Cette structure de file assure le passage d'un thread vers le thread suivant ou précédent en temps constant (situation d'un changement de contexte \textit{``naturel''}). La définition du type \texttt{Threads} est donnée en figure \ref{threadst}.
+
+\begin{figure}[H]
+\begin{lstlisting}
+typedef struct Threads
+{
+  int is_initialized;
+  thread_t main_thread;
+  thread_t current_thread;
+  TAILQ_HEAD(, thread_t_) list;
+  TAILQ_HEAD(, thread_t_) list_sleeping;
+  TAILQ_HEAD(, thread_t_) list_dead;
+} Threads;
+\end{lstlisting}
+\caption{Implémentation du type \texttt{Threads}}
+\label{threadst}
+\end{figure}
+
+Le rôle de chaque attribut est le suivant:
+\begin{itemize}
+  \item \texttt{is\_initialized}: booléen indiquant si la liste a déjà été initialisée par la création d'un premier thread ou non;
+  \item \texttt{main\_thread}: thread correspondant au contexte principal du programme (celui ayant été créé lors de l'initialisation);
+  \item \texttt{current\_thread}: thread en train d'être exécuté;
+  \item \texttt{list}: liste des threads prêts à être exécutés;
+  \item \texttt{list\_sleeping}: liste des threads endormis;
+  \item \texttt{list\_dead}: liste des threads morts.
+\end{itemize}
+
+\subsection{Fonctionnement}
+
+L'initialisation des structures de données a lieu lors du premier appel à l'une des fonctions de la bibliothèque. Pour plus de facilité, la structure \texttt{Threads} utilisée est en fait définie de manière statique avec une portée globale.
+
+\subsubsection*{L'initialisation}
+
+L'initialisation de \texttt{Threads} consiste simplement en la création des différentes listes en attribut, ainsi qu'en l'initialisation d'un premier thread correspondant au contexte d'appel. Ce thread sera défini comme étant le thread principal.
+
+De plus, l'instruction suivante:
+\begin{center}
+\verb[atexit(threads_destroy);[
+\end{center}
+assure la libération mémoire de l'intégralité des allocations dynamiques effectuées à la fin du programme.
+
+\subsubsection*{Création d'un thread}
+
+La création d'un thread se résume en l'allocation dynamique d'une variable \texttt{thread\_t} puis en son initialisation. Il ne reste ensuite qu'à l'insérer à la fin de la liste des threads prêts de la structure \texttt{Threads}.
+
+\subsubsection*{Passage de main}
+
+Le passage de main, à l'aide de la fonction \texttt{thread\_yield}, consiste simplement à placer le thread courant en fin de liste et d'exécuter le thread se trouvant en début de liste. Dans le cas où cette liste serait vide, il faut réveiller un thread endormi pour l'exécuter. Cette fonction se charge d'effectuer le changement de contexte, ce qui lance l'exécution de la fonction associée au thread.
+
+\subsubsection*{Attente de thread}
+
+L'attente d'un thread consiste en fait à attendre qu'il passe à l'état \textit{mort}. Si jamais le thread concerné n'est pas le thread courant, le remplacement est effectué, suivi par le changement de contexte, afin de reprendre son exécution. S'il est endormi, il faut alors le réveiller, le placer dans la liste des threads prêts, et l'exécuter. La valeur de retour du thread est récupérée directement depuis l'attribut \texttt{retval} de la structure \texttt{thread\_t}.
+
+\subsubsection*{Terminer un thread}
+
+Lorsque l'utilisateur demande à terminer un thread, il est simplement indiqué comme mort et placé dans la liste des threads morts. Il ne reste alors qu'à demander à passer la main.
+
+
+
+
+
+\section{Choix des objectifs avancés}
+
+L’ensemble des fonctions de base figurant dans le fichier \texttt{thread.h} fourni a été implémenté. Les tests pré-existants ont permis de vérifier au fur et à mesure du développement que le code en cours
+d’écriture était en adéquation avec les prérequis.\\
+
+Les objectifs avancés envisagés ensuite sont présentés dans les sections suivantes. Plusieurs d'entre eux ont été développés parallèlement : d'une part les priorités et la préemption et d'autre part le support des machines mutiprocesseurs.
 
 \section{Préemption}
 
@@ -255,24 +365,36 @@ Cette section expose l'implémentation faite des threads noyaux pour exécuter s
 
 \subsection{Réflexion et implémentation}
 
-De manière simplifiée, au lieu d'un seul thread noyau, un tableau de threads noyaux sera utilisé, et chaque fois qu'un \texttt{thread\_yield} sera fait sur l'un des threads noyaux, le thread en tête de liste des threads prêts sera chargé. Derrière ce principe simple se cachent néanmoins des problèmes à résoudre.\\
+De manière simplifiée, au lieu d'un seul thread noyau, un tableau de threads noyaux sera utilisé, et chaque fois qu'un \texttt{thread\_yield} sera fait sur l'un des threads noyaux, le thread en tête de liste des threads prêts sera chargé. Derrière ce principe simple se cachent néanmoins des problèmes à résoudre.
+
+\subsubsection*{Changements préalables}
 
 Un changement a dû être opéré avant même de commencer la gestion multithread. Dans une première implémentation, le thread courant était stockés dans le champ \texttt{currentThread} de la structure \texttt{Threads} mais était aussi laissé en tête de la liste des thrads prêts. Ceci devient impossible lorsqu'il y a plusieurs threads courants simultanément. Ainsi lorsqu'un thread est chargé par un thread noyau, il est maintenant retiré de la liste des threads prêts.
 
-Le second point à changé avant de pouvoir réellement commencer les multithreads est la protection des données. Pour éviter par exemple qu'un thread utilisateur soit attribué à deux threads noyaux en même temps, les accés à la liste des threads doivent être gérés. Ainsi les sections critiques ont été identifiées et encadrés par des verrouillages et déverrouillages de spinlocks. Ce sont toutes les zones du codes dans lesquelles sont faits des tests sur les listes de threads ou des modifications sur ces listes.\\
+Le second point à changé avant de pouvoir réellement commencer les multithreads est la protection des données. Pour éviter par exemple qu'un thread utilisateur soit attribué à deux threads noyaux en même temps, les accés à la liste des threads doivent être gérés. Ainsi les sections critiques ont été identifiées et encadrés par des verrouillages et déverrouillages de spinlocks. Ce sont toutes les zones du codes dans lesquelles sont faits des tests sur les listes de threads ou des modifications sur ces listes.
 
-Concernant la gestion du multithreading, dans la structure \texttt{Threads}, le champ \texttt{currentThread} n'est plus de type \texttt{thread\_t} mais de type \texttt{thread\_t *}. Le champ \texttt{pthread\_t *pthreadTList} y a été ajouté : ce tableau stockera les threads noyaux. Les deucx tableaux précédents étant de même taille, le thread stocké dans la case $i$ de \texttt{currentThread} est le thread en cours d'exécution dans le thread noyaux stocké dans la case $i$ de \texttt{pthreadTList}. On remarque qu'on utilise la bibliothèque \texttt{pthread} pour les threads noyaux et les verrous.
+\subsubsection*{Implémentation du multithreading}
 
-Par choix, le tableau des threads noyaux est de taille le nombre de coeurs de la machine. Ce nombre est lu dans le fichier \texttt{/proc/cpuinfo} par la fonction \texttt{get\_cores}.
+Concernant la gestion du multithreading, dans la structure \texttt{Threads}, le champ \texttt{currentThread} n'est plus de type \texttt{thread\_t} mais de type \texttt{thread\_t *}. Le champ \texttt{pthread\_t *pthreadTList} y a été ajouté : ce tableau stockera les threads noyaux. Les deucx tableaux précédents étant de même taille, le thread stocké dans la case $i$ de \texttt{currentThread} est le thread en cours d'exécution dans le thread noyaux stocké dans la case $i$ de \texttt{pthreadTList}. On remarque qu'on utilise la bibliothèque \texttt{pthread} pour les threads noyaux et les verrous.\\
 
-Les autres modifications importantes du code existant ont été faites à l'initialisation des tableaux de threads courants et pthreads et dans la fonction \texttt{thread\_yield}. Le tableau des threads courants est initialisé à \texttt{NULL}, sauf la dernière case qui contient le thread du main. Les threads noyaux sont initialisés avec la fonction \texttt{initPthread} qui lui attribue un numéro unique et fait un appel à \texttt{thread\_yield}. La fonction \texttt{thread\_yield} a donc dû être modifiée pour gérer le cas dans lequel le thread courant lors de l'appel vaut \texttt{NULL} (ie. est non initialisé). Ainsi, après modification, dans ce cas là, la fonction \texttt{thread\_yield} effectue un \texttt{setcontext} au lieu d'un \texttt{swapcontext}.
+Par choix, le tableau des threads noyaux est de taille le nombre de coeurs de la machine. Ce nombre est lu dans le fichier \texttt{/proc/cpuinfo} par la fonction \texttt{get\_cores}.\\
 
-\paragraph{Remarque : }
+Les autres modifications importantes du code existant ont été faites à l'initialisation des tableaux de threads courants et pthreads et dans la fonction \texttt{thread\_yield}.
+
+Le tableau des threads courants est initialisé à \texttt{NULL}, sauf la dernière case qui contient le thread du main. Les threads noyaux sont initialisés avec la fonction \texttt{initPthread} qui lui attribue un numéro unique et fait un appel à \texttt{thread\_yield}.
+
+La fonction \texttt{thread\_yield} a donc dû être modifiée pour gérer le cas dans lequel le thread courant lors de l'appel vaut \texttt{NULL} (ie. est non initialisé). Ainsi, après modification, dans ce cas là, la fonction \texttt{thread\_yield} effectue un \texttt{setcontext} au lieu d'un \texttt{swapcontext}.
+
+\subsubsection*{Remarque}
 
 L'entier unique attribué à chaque thread noyaux est généré par la fonction \texttt{pthread\_setspecific}.
 
 \subsection{Tests et problèmes}
 
+% Ca marche pas.
+% L'erreur obtenue change d'une exécution à l'autre.
+% Ca fait des segfault.
+% L'erreur semble provenir de ...
 
 \section*{Conclusion} %TODO
 %tests, valgrind, réponse au sujet, code propre
