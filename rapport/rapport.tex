@@ -67,7 +67,7 @@
     Maxime \textsc{Bellier} \ \ \ Louis \textsc{Boucherie}\ \ \ Jean-Michaël \textsc{Celerier}\\
     Julien \textsc{Chaumont} \ \ \ Bazire \textsc{Houssin} \ \ \ Sylvain \textsc{Vaglica}\\[1cm]
     \textsc{Groupe 3}\\[1.5cm]
-    \textsc{\large 23/05/2013 }\\[1.5cm] %TODO
+    \textsc{\large 16/05/2013 }\\[1.5cm]
     \includegraphics[width=8cm]{logo.png}
 
   \end{center}
@@ -240,10 +240,80 @@ Néanmoins, en restreignant l'intervalle possible des priorités sur un petit in
 
 La seule contrainte est de devoir garder une valeur correcte pour la priorité maximale dans la liste des threads, ce qui impose un parcours complet de la liste dès lors qu'un thread dont la priorité est égale à la priorité maximale sort de la liste (qu'il soit mort ou endormi). L'ajout d'un thread dont la priorité est plus importante que les autres n'implique pas de nouveau parcours.\\
 
-Le nouveau système mis en place améliore encore cette complexité, puisqu'elle assure un \textit{yield} en temps constant. Plutôt que de se baser sur le nombre de \textit{yields} sur un thread donné, il suffit de travailler sur la durée d'exécution de ce même thread entre deux \textit{yields}: plus un thread est prioritaire, plus il aura droit à une durée élevée pour s'exécuter avant le prochain ordonnancement.
+Le nouveau système mis en place améliore encore cette complexité, puisqu'elle assure un \textit{yield} en temps constant. Plutôt que de se baser sur le nombre de \textit{yields} sur un thread donné, il suffit de travailler sur la durée d'exécution de ce même thread entre deux \textit{yields}: plus un thread est prioritaire, plus il aura droit à une durée élevée pour s'exécuter avant le prochain ordonnancement. L'algorithme est donné en figure \ref{priority2}.
+
+\begin{figure}[H]
+\begin{algorithm}[H]
+ \While{thread\_list $\neq$ $\emptyset$}{
+ 	thread = thread\_next(thread\_list$\rightarrow$current\_thread)\;
+ 	ms = execution\_time(thread$\rightarrow$priority)\;
+ 	execute(thread);\tcp{Executed in another kernel thread}
+ 	sleep(ms);\tcp{Main thread}
+ 	save\_context\_and\_pause(thread)\;
+ }
+\end{algorithm}
+\caption{Ordonnancement avec la seconde version - point de vue algorithmique}
+\label{priority2}
+\end{figure}
 
 La raison pour laquelle cette version n'a pas été celle qui a été initialement choisie est que la première version mise en place ne nécessitait pas de préemption, contrairement à la seconde. En effet, dans cette nouvelle situation, l'ordonnanceur doit mesurer la durée d'exécution de chaque thread pour demander le \textit{yield} au moment adéquat.
 
+\subsubsection*{Implémentation}
+
+Si le fonctionnement général de l'ordonnancement décrit ci-avant est relativement simple à comprendre, il n'en est pas de même pour son implémentation. Sur les différents essais effectués, le point commun est l'utilisation d'un thread noyau pour faire tourner une fonction faisant les appels \textit{yields}. La première méthode mise en place consistait en l'utilisation de signaux (voir figure \ref{codepreemption1}).
+
+\begin{figure}[H]
+\begin{lstlisting}
+void call_yield() {
+  thread_yield();
+}
+
+void* preemption_signal(void* n) {
+  //Association between the SIG_YIELD signal and the call_yield function
+  signal(SIG_YIELD, call_yield);
+
+  while(run_preemption) {
+    //Send a SIG_YIELD signal and wait
+    raise(SIG_YIELD);
+    sleep(1);
+  }
+  return n;
+}
+
+void start_preemption() {
+  run_preemption = 1;
+  pthread_create(&preemption_thread, NULL, (void*) preemption_signal, (void*) 0);
+}
+
+void stop_preemption() {
+  run_preemtion = 0;
+  pthread_join(&preemption_thread);
+}
+\end{lstlisting}
+\caption{Premier essai d'implémentation}
+\label{codepreemption1}
+\end{figure}
+
+Ce code ne fonctionne pas, pour la simple raison que lorsque le signal \texttt{SIG\_YIELD} est émis, c'est dans \texttt{preemption\_thread} qu'il s'exécute. Une deuxième version utilisant les fonctions de la bibliothèque \texttt{pthread} a donc été testée (figure \ref{codepreemption2}.
+
+\begin{figure}[H]
+\begin{lstlisting}
+void* preemption_signal(void* n) {
+  while(run_preemption) {
+    //Starting a user thread in another pthread and wait
+    pthread_create(&waiting_thread, NULL, (void*) call_yield, (void*) 0);
+    sleep(1);
+    //Stop the pthread
+    pthread_cancel(waiting_thread);
+  }
+  return n;
+}
+\end{lstlisting}
+\caption{Deuxième essai}
+\label{codepreemption2}
+\end{figure}
+
+Là encore, un problème se pose. En effet, bien que cette solution permette effectivement d'exécuter à la fois la fonction \texttt{preemption\_signal} dans un thread noyau, et les threads utilisateurs dans un autre, l'arrêt de ce dernier est pour le moins\dots\ brutal. En effet, la fonction \texttt{pthread\_cancel} ne permet pas de récupérer le contexte du thread, ce qui interdit toute tentative de le reprendre ultérieurement. Il s'agit en fait plus d'une manière de quitter que de mettre en pause.
 
 \section{Multithread}
 
