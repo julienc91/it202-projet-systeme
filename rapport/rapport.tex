@@ -205,6 +205,50 @@ void* preemption_signal(void* n) {
 
 Là encore, un problème se pose. En effet, bien que cette solution permette effectivement d'exécuter à la fois la fonction \texttt{preemption\_signal} dans un thread noyau, et les threads utilisateurs dans un autre, l'arrêt de ce dernier est pour le moins\dots\ brutal. En effet, la fonction \texttt{pthread\_cancel} ne permet pas de récupérer le contexte du thread, ce qui interdit toute tentative de le reprendre ultérieurement. Il s'agit en fait plus d'une manière de quitter que de mettre en pause.
 
+Malheureusement, par manque de temps, et sûrement aussi d'inspiration, la branche du dépôt consacrée à la préemption en est restée là, à quelques nouvelles tentatives plus ou moins hasardeuses prêt.
+
+\subsubsection*{Sans préemption, améliorer la complexité des priorités}
+
+Une fois la mise en place de la préemption abandonnée, une partie du temps restant a été consacrée à tenter d'améliorer la complexité du système de priorités. L'idée retenue était de créer non plus une unique liste de threads, mais une par priorité. L'algorithme correspondant est donné en figure \ref{priority3}.
+
+\begin{figure}[H]
+\begin{algorithm}[H]
+ thread = thread\_list$rightarrow$current\_thread\;
+ priority = thread$\rightarrow$priority\;
+ continue = true\;
+ static count = 0;\tcp{Must keep its value from one call to another}
+ \BlankLine
+ \While{thread\_list $\neq$ $\emptyset$ \textbf{and} continue}{
+	first\_thread = thread\_list$\rightarrow$list[priority][0]\;
+ 	thread = thread\_next(thread, thread\_list$\rightarrow$list[priority])\;
+ 	\tcc{If we executed the whole list}
+ 	\If{thread == first\_thread}{
+ 		count = count + 1\;
+ 	}
+ 	\tcc{If we executed the whole list "priority" times}
+ 	\eIf{count == priority} {
+ 	    \tcc{We consider the next priority}
+ 		count = 0\;
+ 		\eIf{priority == 0} {
+ 			priority = thread\_list$\rightarrow$max\_priority\;
+ 		}{
+ 			priority = priority - 1\;
+ 		}
+ 	}{
+ 	    \tcc{Otherwise, we've found the thread to execute next!}
+ 		continue = false\;
+ 	}
+ }
+ execute(thread)\;
+\end{algorithm}
+\caption{Améliorer le système de priorités}
+\label{priority3}
+\end{figure}
+
+Brièvement, cette solution consiste simplement à exécuter tous les threads de chaque liste autant de fois que la valeur de leur priorité, et quand toute la liste a été exécutée ainsi, on peut passer à la liste de priorité suivante.
+
+L'implémentation de cette méthode n'est pas difficile en soit, mais nécessite tout de même un nombre de modifications non négligeable dans le code. Le temps perdu à tenter de mettre en place la préemption a empêché la mise en place de ce nouveau système (les tentatives de dernière minute étaient trop buggées pour être corrigées d'ici la date de rendu du projet), et c'est pourquoi, a posteriori, nous regrettons de ne pas avoir commencé par l'implémenter avant de passer à la préemption.
+
 \section{Multithread}
 
 Cette section expose l'implémentation faite des threads noyaux pour exécuter simultanément les threads utilisateurs.
