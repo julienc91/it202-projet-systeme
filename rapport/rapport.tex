@@ -184,6 +184,26 @@ void stop_preemption() {
 \label{codepreemption1}
 \end{figure}
 
+Ce code ne fonctionne pas, pour la simple raison que lorsque le signal \texttt{SIG\_YIELD} est émis, c'est dans \texttt{preemption\_thread} qu'il s'exécute. Une deuxième version utilisant les fonctions de la bibliothèque \texttt{pthread} a donc été testée (figure \ref{codepreemption2}.
+
+\begin{figure}[H]
+\begin{lstlisting}
+void* preemption_signal(void* n) {
+  while(run_preemption) {
+    //Starting a user thread in another pthread and wait
+    pthread_create(&waiting_thread, NULL, (void*) call_yield, (void*) 0);
+    sleep(1);
+    //Stop the pthread
+    pthread_cancel(waiting_thread);
+  }
+  return n;
+}
+\end{lstlisting}
+\caption{Deuxième essai}
+\label{codepreemption2}
+\end{figure}
+
+Là encore, un problème se pose. En effet, bien que cette solution permette effectivement d'exécuter à la fois la fonction \texttt{preemption\_signal} dans un thread noyau, et les threads utilisateurs dans un autre, l'arrêt de ce dernier est pour le moins\dots\ brutal. En effet, la fonction \texttt{pthread\_cancel} ne permet pas de récupérer le contexte du thread, ce qui interdit toute tentative de le reprendre ultérieurement. Il s'agit en fait plus d'une manière de quitter que de mettre en pause.
 
 \section{Multithread}
 
