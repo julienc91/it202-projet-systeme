@@ -79,7 +79,7 @@
 
 \section*{Introduction}
 
-Le projet de Système d'Exploitation consiste en la réalisation d'une bibliothèque de threads. Les tests ayant déjà été implémentés et fixés en amont, il s'agit d'un développement par les tests.
+Le projet de Système d'Exploitation consiste en la réalisation d'une bibliothèque de threads. Les tests ayant déjà été implémentés et fixés en amont, il s'agit d'un développement dirigé par les tests.
 
 
 %objectifs
@@ -361,7 +361,8 @@ L'implémentation de cette méthode n'est pas difficile en soit, mais nécessite
 
 \section{Multithread}
 
-Cette section expose l'implémentation faite des threads noyaux pour exécuter simultanément les threads utilisateurs.
+Cette section expose l'implémentation faite des threads noyaux pour exécuter simultanément les threads utilisateurs, lorsqu'une machine dispose
+de plusieurs unités d'exécution parallèles.
 
 \subsection{Réflexion et implémentation}
 
@@ -385,12 +386,34 @@ Le tableau des threads courants est initialisé à \texttt{NULL}, sauf la derni�
 
 La fonction \texttt{thread\_yield} a donc dû être modifiée pour gérer le cas dans lequel le thread courant lors de l'appel vaut \texttt{NULL} (\textit{ie} est non initialisé). Ainsi, après modification et dans ce cas là, la fonction \texttt{thread\_yield} effectue un \texttt{setcontext} au lieu d'un \texttt{swapcontext}.
 
+Enfin, le système de clefs de pthread (avec les fonctions pthread\_key\_create) a été utilisé pour identifier les threads noyaux,
+dans le tableau de la structure \texttt{Threads}.
+
 \subsubsection*{Remarque}
 
 L'entier unique attribué à chaque thread noyaux est généré par la fonction \texttt{pthread\_setspecific}.
 
 \subsection{Problèmes du multithreading}
 
+Avant tout, il convient de reconnaître que les essais effectués pour implémenter un multithreading
+fonctionnel se sont soldés par un échec.
+
+Certainement en raison de problèmes de concurrence, le code échoue en effet de manière aléatoire à différents
+endroits du programme.
+Il arrive même parfois que tous les tests passent.
+Mais le cas le plus fréquent est l'erreur de segmentation, ou le core dump.
+
+\subsubsection{Problèmes lors de la terminaison}
+Des difficultés ont été rencontrées pour terminer proprement le programme.
+En effet, l'appel de la fonction \texttt{atexit()} pouvant s'exécuter sur n'importe quel thread,
+il est arrivé que des threads essayent de se libérer eux-mêmes, ce qui se solde par l'échec de l'exécution.
+
+\subsubsection{Problèmes de deadlock}
+Des deadlocks ont été rencontrées à plusieurs étapes.
+Ont été protégés à l'aide des mutex pthread tous les accès aux listes de threads, vivants, endormis, et morts.
+Cela pour éviter par exemple qu'un thread vivant soit envoyé par erreur dans la liste des threads morts.
+
+\subsubsection{}
 % Ca marche pas.
 % L'erreur obtenue change d'une exécution à l'autre.
 % Ca fait des segfault.
