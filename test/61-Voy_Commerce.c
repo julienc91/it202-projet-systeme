@@ -296,6 +296,7 @@ int main (int argc, char **argv)
    printf("time = %ld.%03ldms (coupures :", temps/1000, temps%1000);
    for (i=0; i<NrTowns; i++)
      printf(" %d",cuts[i]);
-     printf(")\n");
+   printf(")\n");
+   free(cuts);
    return 0 ;
 }

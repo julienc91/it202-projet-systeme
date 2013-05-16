@@ -94,7 +94,7 @@ void threads_destroy()
 
 		/* Libère l'espace alloué */
 		VALGRIND_STACK_DEREGISTER(item->valgrind_stackid);
-		free(item->context.uc_stack.ss_sp);
+		//free(item->context.uc_stack.ss_sp);
 		free(item);
 	}
 

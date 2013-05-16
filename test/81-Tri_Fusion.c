@@ -197,6 +197,8 @@ int main(int argc, char * argv[]){
     print_tableau();
     printf("\n");
 
+    free(tab_pt);
+
 
     return EXIT_SUCCESS;
 }

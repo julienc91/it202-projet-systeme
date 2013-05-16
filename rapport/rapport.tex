@@ -420,8 +420,13 @@ Cela pour éviter par exemple qu'un thread vivant soit envoyé par erreur dans l
 
 \input{partie3.tex}
 
-\section*{Conclusion} %TODO
-%tests, valgrind, réponse au sujet, code propre
+\section*{Conclusion}
+
+Bien que le projet ait rapidement atteint les objectifs principaux, trop de temps a été perdu sur des tentatives infructueuses d'implémentation d'objectifs secondaires, ce qui explique finalement le peu de différences entre le code final et le code au moment du rapport intermédiaire. Tout n'est pas négatif pour autant, puisque ce projet aura permis de mieux appréhender certains concepts \textit{"bas niveau"} que nous n'avions pas abordés jusqu'alors. Les points non implémentés dans la version finale, à défaut d'avoir été insérés avec succès, ont tout de même été mûrement réfléchis et testés avant d'être abandonnés.
+
+Par ailleurs, le projet rendu répond à toutes les demandes principales du sujet, en plus d'un système de priorités fonctionnel mis en place. Ceci se traduit notamment par le passage de tous les tests imposés, avec des performances satisfaisantes (en comparaison de la bibliothèque de threads noyaux \texttt{pthread}). On notera également l'approbation de l'utilitaire \textit{Valgrind} quant aux fuites mémoires engendrées par la bibliothèque. Au niveau du code, un soin particulier a été apporté à sa lisibilité et à son organisation.
+
+Finalement, bien que nous ne soyons par parvenus à atteindre les objectifs que nous nous étions initialement fixés, et malgré quelques déceptions à ce propos, nous sommes parvenus à mettre en place une bibliothèque de threads utilisateurs fonctionnelle, et globalement satisfaisante.
 
 
 \end{document}
